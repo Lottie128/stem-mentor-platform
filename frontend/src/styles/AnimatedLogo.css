@@ -1,0 +1,109 @@
+.animated-logo {
+  display: inline-block;
+  position: relative;
+}
+
+.animated-logo svg {
+  width: 100%;
+  height: 100%;
+}
+
+.logo-path {
+  stroke: #1d1d1f;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+/* Letter S animation */
+.logo-s {
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: drawS 2.5s ease-in-out infinite;
+}
+
+@keyframes drawS {
+  0%, 100% {
+    stroke-dashoffset: 200;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Letter T animation */
+.logo-t {
+  stroke-dasharray: 150;
+  stroke-dashoffset: 150;
+  animation: drawT 2.5s ease-in-out infinite 0.3s;
+}
+
+@keyframes drawT {
+  0%, 100% {
+    stroke-dashoffset: 150;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Orbiting dots */
+.orbit-dot {
+  transform-origin: 50px 50px;
+  opacity: 0.8;
+  fill: #1d1d1f;
+}
+
+.dot-1 {
+  animation: orbit1 3s linear infinite;
+}
+
+.dot-2 {
+  animation: orbit2 3s linear infinite;
+}
+
+.dot-3 {
+  animation: orbit3 3s linear infinite;
+}
+
+@keyframes orbit1 {
+  from {
+    transform: rotate(0deg) translateX(35px) rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg) translateX(35px) rotate(-360deg);
+  }
+}
+
+@keyframes orbit2 {
+  from {
+    transform: rotate(120deg) translateX(35px) rotate(-120deg);
+  }
+  to {
+    transform: rotate(480deg) translateX(35px) rotate(-480deg);
+  }
+}
+
+@keyframes orbit3 {
+  from {
+    transform: rotate(240deg) translateX(35px) rotate(-240deg);
+  }
+  to {
+    transform: rotate(600deg) translateX(35px) rotate(-600deg);
+  }
+}
+
+/* Subtle pulse */
+.animated-logo {
+  animation: logoPulse 2s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
