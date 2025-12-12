@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const User = require('./User');
 
 const Award = sequelize.define('Award', {
   id: {
@@ -29,9 +28,14 @@ const Award = sequelize.define('Award', {
     allowNull: false,
     defaultValue: '🏆'
   },
+  award_type: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Unique type identifier for the award (e.g., FIRST_PROJECT, FIVE_PROJECTS)'
+  },
   awarded_by: {
     type: DataTypes.INTEGER,
-    allowNull: true, // Allow null for system-generated awards
+    allowNull: true,
     references: {
       model: 'users',
       key: 'id'
@@ -46,9 +50,5 @@ const Award = sequelize.define('Award', {
   timestamps: true,
   underscored: true
 });
-
-Award.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
-Award.belongsTo(User, { foreignKey: 'awarded_by', as: 'admin' });
-User.hasMany(Award, { foreignKey: 'student_id', as: 'awards' });
 
 module.exports = Award;

@@ -20,6 +20,7 @@ User.hasMany(Certificate, { as: 'certificates', foreignKey: 'student_id' });
 Project.hasMany(Certificate, { as: 'certificates', foreignKey: 'project_id' });
 
 Award.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
+Award.belongsTo(User, { as: 'admin', foreignKey: 'awarded_by' });
 User.hasMany(Award, { as: 'awards', foreignKey: 'student_id' });
 
 module.exports = {

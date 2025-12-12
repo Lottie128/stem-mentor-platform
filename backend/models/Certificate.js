@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const User = require('./User');
-const Project = require('./Project');
 
 const Certificate = sequelize.define('Certificate', {
   id: {
@@ -52,10 +50,5 @@ const Certificate = sequelize.define('Certificate', {
   timestamps: true,
   underscored: true
 });
-
-Certificate.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
-Certificate.belongsTo(Project, { foreignKey: 'project_id', as: 'project' });
-User.hasMany(Certificate, { foreignKey: 'student_id', as: 'certificates' });
-Project.hasOne(Certificate, { foreignKey: 'project_id', as: 'certificate' });
 
 module.exports = Certificate;
