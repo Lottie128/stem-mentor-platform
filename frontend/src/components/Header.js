@@ -1,40 +1,61 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import AnimatedLogo from './AnimatedLogo';
 import '../styles/Header.css';
 
 const Header = ({ user, onLogout }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    if (onLogout) onLogout();
+    onLogout();
     navigate('/login');
   };
 
+  const getPortfolioUsername = () => {
+    if (user?.email) {
+      return user.email.split('@')[0];
+    }
+    return '';
+  };
+
   return (
-    <header className="app-header">
+    <header className="app-header glass-card">
       <div className="header-container">
-        <Link to={user?.role === 'ADMIN' ? '/admin' : '/student'} className="logo-link">
-          <AnimatedLogo size={50} />
-          <div className="brand-text">
-            <h1 className="brand-name">STEM Mentor</h1>
-            <p className="brand-tagline">Project Planning Platform</p>
-          </div>
+        <Link to={user?.role === 'ADMIN' ? '/admin' : '/student'} className="logo">
+          <span className="logo-icon">🧠</span>
+          <span className="logo-text">STEM Mentor</span>
         </Link>
 
-        <nav className="header-nav">
-          {user && (
+        <nav className="nav-links">
+          {user?.role === 'ADMIN' ? (
             <>
-              <span className="user-info">
-                <span className="user-name">{user.full_name}</span>
-                <span className="user-role">{user.role}</span>
-              </span>
-              <button onClick={handleLogout} className="logout-btn">
-                Logout
-              </button>
+              <Link to="/admin" className="nav-link">🏠 Dashboard</Link>
+              <Link to="/admin/students" className="nav-link">👥 Students</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/student" className="nav-link">🏠 Dashboard</Link>
+              <Link to="/student/submit" className="nav-link">➕ New Project</Link>
+              <Link to="/student/awards" className="nav-link">🏆 Awards</Link>
+              <Link to={`/portfolio/${getPortfolioUsername()}`} className="nav-link" target="_blank">👤 Portfolio</Link>
+              <Link to="/student/profile" className="nav-link">✏️ Profile</Link>
             </>
           )}
         </nav>
+
+        <div className="user-section">
+          <div className="user-info">
+            {user?.profile_picture && (
+              <img src={user.profile_picture} alt={user?.full_name} className="user-avatar" />
+            )}
+            <div className="user-details">
+              <span className="user-name">{user?.full_name}</span>
+              <span className="user-role">{user?.role}</span>
+            </div>
+          </div>
+          <button onClick={handleLogout} className="logout-btn">
+            🚪 Logout
+          </button>
+        </div>
       </div>
     </header>
   );

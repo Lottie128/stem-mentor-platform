@@ -1,8 +1,97 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/auth.controller');
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const { authenticate } = require('../middleware/auth.middleware');
 
-router.post('/login', authController.login);
-router.post('/refresh', authController.refresh);
+// Login
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const isValidPassword = await user.comparePassword(password);
+    if (!isValidPassword) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    if (!user.is_active) {
+      return res.status(403).json({ message: 'Account is inactive', inactive: true });
+    }
+
+    // Check if account expired
+    if (user.expires_at && new Date(user.expires_at) < new Date()) {
+      return res.status(403).json({ message: 'Account has expired', inactive: true });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        is_active: user.is_active,
+        profile_picture: user.profile_picture,
+        age: user.age,
+        school: user.school,
+        country: user.country
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get current user
+router.get('/me', authenticate, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update profile
+router.put('/profile', authenticate, async (req, res) => {
+  try {
+    const { full_name, age, school, country, bio, profile_picture } = req.body;
+
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (full_name) user.full_name = full_name;
+    if (age !== undefined) user.age = age;
+    if (school !== undefined) user.school = school;
+    if (country !== undefined) user.country = country;
+    if (bio !== undefined) user.bio = bio;
+    if (profile_picture !== undefined) user.profile_picture = profile_picture;
+
+    await user.save();
+
+    res.json({ message: 'Profile updated successfully', user });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
 
 module.exports = router;
