@@ -33,17 +33,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      PENDING_REVIEW: { className: 'badge-warning', text: 'Pending Review' },
-      PLAN_READY: { className: 'badge-success', text: 'Plan Ready' },
-      IN_PROGRESS: { className: 'badge-info', text: 'In Progress' },
-      COMPLETED: { className: 'badge-primary', text: 'Completed' }
-    };
-    const badge = badges[status] || { className: 'badge-default', text: status };
-    return <span className={`status-badge ${badge.className}`}>{badge.text}</span>;
-  };
-
   if (loading) {
     return <div className="loading">Loading dashboard...</div>;
   }
@@ -51,97 +40,73 @@ const AdminDashboard = () => {
   return (
     <div className="admin-dashboard">
       <div className="dashboard-header">
-        <h1>Admin Dashboard</h1>
+        <h1>🎯 Admin Dashboard</h1>
         <p>Welcome back! Here's what's happening with your STEM mentoring platform.</p>
       </div>
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon">👥</div>
-          <div className="stat-content">
-            <h3>{stats.totalStudents}</h3>
-            <p>Total Students</p>
-          </div>
+          <div className="stat-value">{stats.totalStudents}</div>
+          <div className="stat-label">Total Students</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon">✅</div>
-          <div className="stat-content">
-            <h3>{stats.activeStudents}</h3>
-            <p>Active Students</p>
-          </div>
+          <div className="stat-value">{stats.activeStudents}</div>
+          <div className="stat-label">Active Students</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon">⏳</div>
-          <div className="stat-content">
-            <h3>{stats.pendingProjects}</h3>
-            <p>Pending Review</p>
-          </div>
+          <div className="stat-value">{stats.pendingProjects}</div>
+          <div className="stat-label">Pending Review</div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card glass-card">
           <div className="stat-icon">🎉</div>
-          <div className="stat-content">
-            <h3>{stats.completedProjects}</h3>
-            <p>Completed</p>
-          </div>
+          <div className="stat-value">{stats.completedProjects}</div>
+          <div className="stat-label">Completed</div>
         </div>
       </div>
 
-      <div className="quick-actions">
+      <div className="quick-actions glass-card">
         <h2>Quick Actions</h2>
         <div className="action-buttons">
           <Link to="/admin/students" className="action-btn">
             <span className="btn-icon">👥</span>
             Manage Students
           </Link>
-          <Link to="/admin/projects" className="action-btn">
-            <span className="btn-icon">📝</span>
-            Review Projects
-          </Link>
         </div>
       </div>
 
-      <div className="recent-section">
+      <div className="section">
         <div className="section-header">
-          <h2>Recent Project Submissions</h2>
-          <Link to="/admin/projects" className="view-all">View All →</Link>
+          <h2>📋 Recent Project Submissions</h2>
         </div>
         
-        {recentProjects.length === 0 ? (
-          <div className="empty-state">
-            <p>No recent projects</p>
-          </div>
-        ) : (
-          <div className="projects-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>Project Title</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Submitted</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentProjects.map(project => (
-                  <tr key={project.id}>
-                    <td>{project.student_name}</td>
-                    <td>{project.title}</td>
-                    <td><span className="type-badge">{project.type}</span></td>
-                    <td>{getStatusBadge(project.status)}</td>
-                    <td>{new Date(project.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <Link to={`/admin/projects/${project.id}`} className="review-link">
-                        Review
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="section-content glass-card">
+          {recentProjects.length === 0 ? (
+            <div className="empty-state">
+              <p>No recent projects</p>
+            </div>
+          ) : (
+            <div className="pending-projects">
+              {recentProjects.map(project => (
+                <div key={project.id} className="project-item">
+                  <div className="project-info">
+                    <h3>{project.title}</h3>
+                    <div className="project-meta">
+                      <span className="meta-item">👤 {project.student_name}</span>
+                      <span className="meta-item">📦 {project.type}</span>
+                      <span className="meta-item">📅 {new Date(project.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <Link to={`/admin/projects/${project.id}`} className="review-btn">
+                    Review
+                  </Link>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

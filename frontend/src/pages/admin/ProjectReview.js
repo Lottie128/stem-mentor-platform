@@ -36,8 +36,24 @@ const ProjectReview = () => {
       const response = await axios.post(`/api/admin/projects/${projectId}/generate-plan`);
       setAiPlan(response.data.plan);
       setEditingPlan(true);
+      alert('✅ AI plan generated successfully!');
     } catch (error) {
-      alert('Failed to generate AI plan: ' + (error.response?.data?.message || 'Unknown error'));
+      alert('❌ Failed to generate AI plan: ' + (error.response?.data?.message || 'Unknown error'));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const regenerateAIPlan = async () => {
+    if (!confirm('🔄 Regenerate AI plan? This will replace the current plan.')) return;
+    setGenerating(true);
+    try {
+      const response = await axios.post(`/api/admin/projects/${projectId}/generate-plan`);
+      setAiPlan(response.data.plan);
+      setEditingPlan(true);
+      alert('✅ AI plan regenerated successfully!');
+    } catch (error) {
+      alert('❌ Failed to regenerate AI plan: ' + (error.response?.data?.message || 'Unknown error'));
     } finally {
       setGenerating(false);
     }
@@ -49,10 +65,10 @@ const ProjectReview = () => {
         plan: aiPlan,
         status: 'PLAN_READY'
       });
-      alert('Plan approved and published!');
+      alert('✅ Plan approved and published!');
       navigate('/admin');
     } catch (error) {
-      alert('Failed to approve plan');
+      alert('❌ Failed to approve plan');
     }
   };
 
@@ -63,10 +79,10 @@ const ProjectReview = () => {
     <div className="project-review">
       <div className="review-header">
         <button onClick={() => navigate('/admin')} className="back-btn">← Back</button>
-        <h1>Project Review</h1>
+        <h1>📋 Project Review</h1>
       </div>
 
-      <div className="project-details-card">
+      <div className="project-details-card glass-card">
         <h2>Project Information</h2>
         <div className="details-grid">
           <div className="detail-item">
@@ -105,19 +121,19 @@ const ProjectReview = () => {
       </div>
 
       {!aiPlan && (
-        <div className="generate-section">
+        <div className="generate-section glass-card">
           <button onClick={generateAIPlan} disabled={generating} className="generate-btn">
-            {generating ? 'Generating AI Plan...' : '🤖 Generate Draft Plan with AI'}
+            {generating ? '⏳ Generating AI Plan...' : '🤖 Generate Draft Plan with AI'}
           </button>
         </div>
       )}
 
       {aiPlan && (
-        <div className="plan-editor">
-          <h2>Project Plan {editingPlan && <span className="editing-badge">Editing</span>}</h2>
+        <div className="plan-editor glass-card">
+          <h2>Project Plan {editingPlan && <span className="editing-badge">✏️ Editing</span>}</h2>
           
           <div className="components-section">
-            <h3>Components Needed</h3>
+            <h3>📦 Components Needed</h3>
             <textarea
               value={JSON.stringify(aiPlan.components, null, 2)}
               onChange={(e) => {
@@ -131,7 +147,7 @@ const ProjectReview = () => {
           </div>
 
           <div className="steps-section">
-            <h3>Build Steps</h3>
+            <h3>🔨 Build Steps</h3>
             <textarea
               value={JSON.stringify(aiPlan.steps, null, 2)}
               onChange={(e) => {
@@ -145,7 +161,7 @@ const ProjectReview = () => {
           </div>
 
           <div className="safety-section">
-            <h3>Safety Notes</h3>
+            <h3>⚠️ Safety Notes</h3>
             <textarea
               value={aiPlan.safety_notes || ''}
               onChange={(e) => setAiPlan({...aiPlan, safety_notes: e.target.value})}
@@ -155,8 +171,11 @@ const ProjectReview = () => {
           </div>
 
           <div className="plan-actions">
+            <button onClick={regenerateAIPlan} disabled={generating} className="regenerate-btn">
+              {generating ? '⏳ Regenerating...' : '🔄 Regenerate with AI'}
+            </button>
             <button onClick={() => setEditingPlan(!editingPlan)} className="edit-btn">
-              {editingPlan ? 'Stop Editing' : 'Edit Plan'}
+              {editingPlan ? '🔒 Stop Editing' : '✏️ Edit Plan'}
             </button>
             <button onClick={approvePlan} className="approve-btn">
               ✅ Approve & Publish Plan
