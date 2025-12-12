@@ -4,6 +4,7 @@ const Project = require('./Project');
 const ProjectPlan = require('./ProjectPlan');
 const Certificate = require('./Certificate');
 const Award = require('./Award');
+const Submission = require('./Submission');
 
 // Define all associations here to avoid duplicates
 Project.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
@@ -23,11 +24,17 @@ Award.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
 Award.belongsTo(User, { as: 'admin', foreignKey: 'awarded_by' });
 User.hasMany(Award, { as: 'awards', foreignKey: 'student_id' });
 
+Submission.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
+Submission.belongsTo(Project, { as: 'project', foreignKey: 'project_id' });
+User.hasMany(Submission, { as: 'submissions', foreignKey: 'student_id' });
+Project.hasMany(Submission, { as: 'submissions', foreignKey: 'project_id' });
+
 module.exports = {
   sequelize,
   User,
   Project,
   ProjectPlan,
   Certificate,
-  Award
+  Award,
+  Submission
 };

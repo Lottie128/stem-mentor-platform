@@ -15,6 +15,14 @@ const Submission = sequelize.define('Submission', {
       key: 'id'
     }
   },
+  student_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
   step_number: {
     type: DataTypes.INTEGER,
     allowNull: false
@@ -37,7 +45,10 @@ const Submission = sequelize.define('Submission', {
   }
 }, {
   tableName: 'submissions',
-  underscored: true
+  timestamps: true,
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 module.exports = Submission;
