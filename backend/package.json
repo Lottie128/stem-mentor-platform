@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "migrate": "sequelize-cli db:migrate",
     "migrate:undo": "sequelize-cli db:migrate:undo",
-    "process-completed": "node scripts/process-completed-projects.js"
+    "process-completed": "node scripts/process-completed-projects.js",
+    "check-steps": "node scripts/check-steps.js"
   },
   "keywords": [],
   "author": "",
