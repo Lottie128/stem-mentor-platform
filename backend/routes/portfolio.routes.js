@@ -3,7 +3,6 @@ const router = express.Router();
 const User = require('../models/User');
 const Project = require('../models/Project');
 const Certificate = require('../models/Certificate');
-const Achievement = require('../models/Achievement');
 
 // Get public portfolio by username
 router.get('/:username', async (req, res) => {
@@ -36,11 +35,8 @@ router.get('/:username', async (req, res) => {
       order: [['issue_date', 'DESC']]
     });
 
-    // Get achievements
-    const achievements = await Achievement.findAll({
-      where: { student_id: user.id },
-      order: [['date_earned', 'DESC']]
-    });
+    // Get achievements (empty array for now until table is created)
+    const achievements = [];
 
     res.json({
       student: {
