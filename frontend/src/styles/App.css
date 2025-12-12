@@ -4,6 +4,7 @@
   flex-direction: column;
   background: #0a0e27;
   position: relative;
+  overflow-x: hidden;
 }
 
 .app-main {
@@ -14,6 +15,16 @@
   padding: 30px 20px;
   position: relative;
   z-index: 10;
+  overflow-y: auto;
+}
+
+/* Fix modal overflow issues */
+.modal-overlay {
+  overflow-y: auto;
+}
+
+.modal-content {
+  margin: 40px auto;
 }
 
 @media (max-width: 768px) {
