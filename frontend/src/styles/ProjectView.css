@@ -16,13 +16,59 @@
   flex: 1;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
 .view-header h1 {
   font-size: 32px;
   background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin-bottom: 20px;
+}
+
+/* Visibility Toggle */
+.visibility-toggle {
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.visibility-toggle.public {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+
+.visibility-toggle.public:hover {
+  background: rgba(34, 197, 94, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.visibility-toggle.private {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.visibility-toggle.private:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
 .progress-bar-container {
@@ -131,6 +177,9 @@
   text-align: center;
   border: 2px solid rgba(236, 72, 153, 0.3);
   transition: all 0.3s ease;
+  text-decoration: none;
+  display: block;
+  color: #e2e8f0;
 }
 
 .certificate-card:hover {
@@ -611,6 +660,16 @@
   .view-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .visibility-toggle {
+    width: 100%;
+    justify-content: center;
   }
 
   .components-grid {
