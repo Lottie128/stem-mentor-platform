@@ -21,9 +21,41 @@ const Header = ({ user, onLogout }) => {
     <header className="app-header glass-card">
       <div className="header-container">
         <Link to={user?.role === 'ADMIN' ? '/admin' : '/student'} className="logo">
-          <div className="logo-icon animated-st">
-            <span className="st-s">S</span>
-            <span className="st-t">T</span>
+          <div className="header-logo">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="45" height="45">
+              <defs>
+                <linearGradient id="headerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#a78bfa" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+              {/* S Letter */}
+              <path 
+                className="header-logo-path header-logo-s"
+                d="M 35 25 Q 20 25 20 35 Q 20 45 35 45 L 55 45 Q 70 45 70 55 Q 70 65 55 65 L 25 65"
+                stroke="url(#headerGradient)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              
+              {/* T Letter */}
+              <path 
+                className="header-logo-path header-logo-t"
+                d="M 50 30 L 80 30 M 65 30 L 65 70"
+                stroke="url(#headerGradient)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              
+              {/* Orbiting dots */}
+              <circle className="header-orbit-dot header-dot-1" cx="50" cy="50" r="2.5" fill="#a78bfa" />
+              <circle className="header-orbit-dot header-dot-2" cx="50" cy="50" r="2.5" fill="#ec4899" />
+              <circle className="header-orbit-dot header-dot-3" cx="50" cy="50" r="2.5" fill="#f59e0b" />
+            </svg>
           </div>
           <span className="logo-text">STEM Mentor</span>
         </Link>
