@@ -55,6 +55,38 @@ exports.getMyCertificates = async (req, res) => {
   }
 };
 
+exports.getCertificateById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const certificate = await Certificate.findOne({
+      where: { id },
+      include: [
+        {
+          model: User,
+          as: 'student',
+          attributes: ['full_name', 'email', 'school', 'country']
+        },
+        {
+          model: Project,
+          as: 'project',
+          attributes: ['title', 'type']
+        }
+      ]
+    });
+
+    if (!certificate) {
+      console.log('Certificate not found for ID:', id);
+      return res.status(404).json({ message: 'Certificate not found' });
+    }
+
+    res.json(certificate);
+  } catch (error) {
+    console.error('Get certificate by ID error:', error);
+    res.status(500).json({ message: 'Failed to fetch certificate' });
+  }
+};
+
 exports.verifyCertificate = async (req, res) => {
   try {
     const { code } = req.params;

@@ -9,7 +9,8 @@ router.get('/my-certificates', authenticate, requireRole('STUDENT'), requireActi
 // Admin routes
 router.post('/generate', authenticate, requireRole('ADMIN'), certificatesController.generateCertificate);
 
-// Public route
+// Public routes
 router.get('/verify/:code', certificatesController.verifyCertificate);
+router.get('/:id', certificatesController.getCertificateById);
 
 module.exports = router;
