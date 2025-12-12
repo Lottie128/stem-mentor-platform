@@ -4,7 +4,6 @@ const User = require('../models/User');
 const Project = require('../models/Project');
 const ProjectPlan = require('../models/ProjectPlan');
 const Certificate = require('../models/Certificate');
-const Submission = require('../models/Submission');
 
 // Get public portfolio by username
 router.get('/:username', async (req, res) => {
@@ -66,7 +65,7 @@ router.get('/:username', async (req, res) => {
   }
 });
 
-// Get public project blog view
+// Get public project blog view (will be implemented when submissions table exists)
 router.get('/:username/project/:projectId', async (req, res) => {
   try {
     const { username, projectId } = req.params;
@@ -102,11 +101,8 @@ router.get('/:username/project/:projectId', async (req, res) => {
       return res.status(404).json({ message: 'Project not found or not public' });
     }
 
-    // Get submissions for this project
-    const submissions = await Submission.findAll({
-      where: { project_id: projectId },
-      order: [['step_number', 'ASC']]
-    });
+    // Get submissions from database when table exists
+    const submissions = [];
 
     res.json({
       student: {
