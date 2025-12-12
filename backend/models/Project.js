@@ -1,6 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const User = require('./User');
 
 const Project = sequelize.define('Project', {
   id: {
@@ -21,42 +20,38 @@ const Project = sequelize.define('Project', {
     allowNull: false
   },
   type: {
-    type: DataTypes.ENUM('Robot', 'Humanoid', 'IoT', 'App', 'Game', 'Other'),
+    type: DataTypes.STRING,
     allowNull: false
   },
   purpose: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false
   },
   experience_level: {
-    type: DataTypes.ENUM('Beginner', 'Intermediate', 'Advanced'),
-    allowNull: false
-  },
-  available_tools: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  budget_range: {
     type: DataTypes.STRING,
     allowNull: false
   },
+  available_tools: {
+    type: DataTypes.TEXT
+  },
+  budget_range: {
+    type: DataTypes.STRING
+  },
   deadline: {
-    type: DataTypes.DATE,
-    allowNull: true
+    type: DataTypes.DATE
   },
   status: {
     type: DataTypes.ENUM('PENDING_REVIEW', 'PLAN_READY', 'IN_PROGRESS', 'COMPLETED'),
-    allowNull: false,
     defaultValue: 'PENDING_REVIEW'
+  },
+  is_public: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true,
+    comment: 'Whether project is visible on public portfolio'
   }
 }, {
   tableName: 'projects',
-  timestamps: true,
   underscored: true
 });
-
-// Associations
-Project.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
-User.hasMany(Project, { foreignKey: 'student_id', as: 'projects' });
 
 module.exports = Project;

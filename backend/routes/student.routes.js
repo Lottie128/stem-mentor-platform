@@ -56,6 +56,29 @@ router.get('/projects/:id', async (req, res) => {
   }
 });
 
+// Toggle project visibility
+router.patch('/projects/:id/visibility', async (req, res) => {
+  try {
+    const { is_public } = req.body;
+    
+    const project = await Project.findOne({
+      where: { id: req.params.id, student_id: req.user.id }
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    project.is_public = is_public;
+    await project.save();
+
+    res.json({ message: 'Project visibility updated', project });
+  } catch (error) {
+    console.error('Toggle visibility error:', error);
+    res.status(500).json({ message: 'Failed to update visibility' });
+  }
+});
+
 // Create new project
 router.post('/projects', async (req, res) => {
   try {
@@ -70,7 +93,8 @@ router.post('/projects', async (req, res) => {
       available_tools,
       budget_range,
       deadline,
-      status: 'PENDING_REVIEW'
+      status: 'PENDING_REVIEW',
+      is_public: true
     });
 
     res.status(201).json(project);
@@ -85,7 +109,6 @@ async function processProjectCompletion(projectId, studentId) {
   console.log(`\n🎉 Processing project completion for project ${projectId}, student ${studentId}`);
   
   try {
-    // Count total completed projects for this student
     const completedCount = await Project.count({
       where: {
         student_id: studentId,
@@ -95,7 +118,6 @@ async function processProjectCompletion(projectId, studentId) {
 
     console.log(`   Total completed projects: ${completedCount}`);
 
-    // Create achievements based on milestones
     const achievements = [
       { count: 1, type: 'FIRST_PROJECT', title: '🎉 First Project Completed!', icon: '🎉', description: 'Successfully completed your first STEM project' },
       { count: 5, type: 'FIVE_PROJECTS', title: '🎆 Five Projects Milestone!', icon: '🎆', description: 'Completed 5 amazing STEM projects' },
@@ -104,7 +126,6 @@ async function processProjectCompletion(projectId, studentId) {
 
     for (const achievement of achievements) {
       if (completedCount === achievement.count) {
-        // Check if award already exists
         const existingAward = await Award.findOne({
           where: {
             student_id: studentId,
@@ -121,13 +142,10 @@ async function processProjectCompletion(projectId, studentId) {
             award_type: achievement.type
           });
           console.log(`   ✅ Created achievement: ${achievement.title}`);
-        } else {
-          console.log(`   ℹ️  Achievement already exists: ${achievement.title}`);
         }
       }
     }
 
-    // Create certificate for this project
     const existingCert = await Certificate.findOne({
       where: {
         student_id: studentId,
@@ -148,8 +166,6 @@ async function processProjectCompletion(projectId, studentId) {
         issue_date: new Date()
       });
       console.log(`   🎓 Created certificate: ${certNumber}`);
-    } else {
-      console.log(`   ℹ️  Certificate already exists for this project`);
     }
 
     console.log('✅ Project completion processing done!\n');
@@ -158,15 +174,13 @@ async function processProjectCompletion(projectId, studentId) {
   }
 }
 
-// Update step status - THE KEY FIX
+// Update step status
 router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
   try {
     const { id, stepIndex } = req.params;
     const { status } = req.body;
 
     console.log(`\n🔄 Updating step ${stepIndex} to status: ${status}`);
-    console.log(`   Project ID: ${id}`);
-    console.log(`   User: ${req.user.email}`);
 
     const project = await Project.findOne({
       where: { id, student_id: req.user.id },
@@ -174,69 +188,42 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
     });
 
     if (!project || !project.plan) {
-      console.error('❌ Project or plan not found');
       return res.status(404).json({ message: 'Project or plan not found' });
     }
 
-    console.log(`   Current project status: ${project.status}`);
-
-    // Update the step status
     const plan = project.plan;
     const steps = [...plan.steps];
     const index = parseInt(stepIndex);
     
     if (index >= 0 && index < steps.length) {
-      const oldStatus = steps[index].status;
       steps[index].status = status;
       plan.steps = steps;
-      
-      // Mark plan as changed to force Sequelize to update JSONB field
       plan.changed('steps', true);
       await plan.save();
       
-      console.log(`✅ Step ${index} updated: ${oldStatus || 'not_started'} → ${status}`);
+      console.log(`✅ Step ${index} updated to ${status}`);
 
-      // Check if all steps are done
       const totalSteps = steps.length;
       const completedSteps = steps.filter(step => step.status === 'done').length;
       const allStepsDone = completedSteps === totalSteps;
       
-      console.log(`   Progress: ${completedSteps}/${totalSteps} steps done (${Math.round((completedSteps/totalSteps)*100)}%)`);
+      console.log(`   Progress: ${completedSteps}/${totalSteps} (${Math.round((completedSteps/totalSteps)*100)}%)`);
       
-      // If all steps are done AND project is not already completed, mark as completed
       if (allStepsDone && project.status !== 'COMPLETED') {
-        console.log('   🎉 All steps completed! Marking project as COMPLETED...');
-        
         project.status = 'COMPLETED';
         await project.save();
-        
-        console.log('   ✅ Project marked as COMPLETED');
-
-        // Process achievements and certificates
         await processProjectCompletion(project.id, req.user.id);
-      } else if (allStepsDone) {
-        console.log('   ℹ️  All steps done but project already marked as COMPLETED');
-      } else {
-        // Update project status to IN_PROGRESS if at least one step is done
-        if (completedSteps > 0 && project.status === 'PLAN_READY') {
-          project.status = 'IN_PROGRESS';
-          await project.save();
-          console.log('   ✅ Project status updated to IN_PROGRESS');
-        }
+      } else if (completedSteps > 0 && project.status === 'PLAN_READY') {
+        project.status = 'IN_PROGRESS';
+        await project.save();
       }
-    } else {
-      console.error(`❌ Invalid step index: ${index}`);
-      return res.status(400).json({ message: 'Invalid step index' });
     }
 
-    // Reload fresh data to return
     await project.reload({ include: [{ model: ProjectPlan, as: 'plan' }] });
-    
-    console.log('✅ Returning updated project\n');
     res.json(project);
   } catch (error) {
-    console.error('❌ Update step status error:', error);
-    res.status(500).json({ message: 'Failed to update step status', error: error.message });
+    console.error('❌ Update step error:', error);
+    res.status(500).json({ message: 'Failed to update step status' });
   }
 });
 
@@ -255,7 +242,6 @@ router.post('/projects/:id/feature-request', async (req, res) => {
     }
 
     console.log(`Feature request for project ${id}:`, feature_description);
-    
     res.json({ message: 'Feature request submitted successfully' });
   } catch (error) {
     console.error('Feature request error:', error);

@@ -45,7 +45,10 @@ router.post('/login', async (req, res) => {
         profile_picture: user.profile_picture,
         age: user.age,
         school: user.school,
-        country: user.country
+        country: user.country,
+        bio: user.bio,
+        skills: user.skills,
+        social_links: user.social_links
       }
     });
   } catch (error) {
@@ -71,7 +74,7 @@ router.get('/me', authenticate, async (req, res) => {
 // Update profile
 router.put('/profile', authenticate, async (req, res) => {
   try {
-    const { full_name, age, school, country, bio, profile_picture } = req.body;
+    const { full_name, age, school, country, bio, profile_picture, skills, social_links } = req.body;
 
     const user = await User.findByPk(req.user.id);
     if (!user) {
@@ -84,6 +87,8 @@ router.put('/profile', authenticate, async (req, res) => {
     if (country !== undefined) user.country = country;
     if (bio !== undefined) user.bio = bio;
     if (profile_picture !== undefined) user.profile_picture = profile_picture;
+    if (skills !== undefined) user.skills = skills;
+    if (social_links !== undefined) user.social_links = social_links;
 
     await user.save();
 

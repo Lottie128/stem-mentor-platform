@@ -37,7 +37,6 @@ const User = sequelize.define('User', {
     type: DataTypes.DATE,
     allowNull: true
   },
-  // New profile fields
   age: {
     type: DataTypes.INTEGER,
     allowNull: true
@@ -53,12 +52,21 @@ const User = sequelize.define('User', {
   },
   profile_picture: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'Base64 encoded profile picture or URL'
+    allowNull: true
   },
   bio: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  skills: {
+    type: DataTypes.ARRAY(DataTypes.STRING),
+    allowNull: true,
+    defaultValue: []
+  },
+  social_links: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: {}
   }
 }, {
   tableName: 'users',
@@ -66,23 +74,14 @@ const User = sequelize.define('User', {
   hooks: {
     beforeCreate: async (user) => {
       if (user.password_hash) {
-        const salt = await bcrypt.genSalt(10);
-        user.password_hash = await bcrypt.hash(user.password_hash, salt);
+        user.password_hash = await bcrypt.hash(user.password_hash, 10);
       }
     }
   }
 });
 
-// Instance method to compare password
-User.prototype.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password_hash);
-};
-
-// Don't send password hash in JSON responses
-User.prototype.toJSON = function() {
-  const values = { ...this.get() };
-  delete values.password_hash;
-  return values;
+User.prototype.comparePassword = async function(password) {
+  return bcrypt.compare(password, this.password_hash);
 };
 
 module.exports = User;
