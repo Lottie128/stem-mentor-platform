@@ -3,23 +3,37 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-if (!GEMINI_API_KEY || GEMINI_API_KEY === 'my key') {
-  console.warn('⚠️ Warning: Gemini API key not configured properly');
-  console.warn('Please set GEMINI_API_KEY in your .env file');
-  console.warn('Get your key at: https://aistudio.google.com/app/apikey');
+// Log API key status on startup
+console.log('\n🔑 Gemini API Key Status:');
+if (!GEMINI_API_KEY) {
+  console.log('   ❌ NOT SET - using mock plans');
+} else if (GEMINI_API_KEY === 'my key') {
+  console.log('   ⚠️  PLACEHOLDER DETECTED - Replace "my key" with actual API key');
+  console.log('   📍 Get your key at: https://aistudio.google.com/app/apikey');
+} else if (GEMINI_API_KEY.length < 20) {
+  console.log('   ⚠️  KEY TOO SHORT - likely invalid');
+} else {
+  console.log('   ✅ CONFIGURED - Key length:', GEMINI_API_KEY.length);
+  console.log('   🚀 AI generation enabled!');
 }
+console.log('');
 
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const genAI = (GEMINI_API_KEY && GEMINI_API_KEY !== 'my key') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 exports.generateProjectPlan = async (project) => {
   try {
     if (!GEMINI_API_KEY || GEMINI_API_KEY === 'my key' || !genAI) {
-      console.log('❌ No valid Gemini API key found, using mock plan');
-      console.log('Current key:', GEMINI_API_KEY ? 'Set but invalid' : 'Not set');
+      console.log('❌ No valid Gemini API key - using mock plan');
+      if (GEMINI_API_KEY === 'my key') {
+        console.log('⚠️  Please replace "my key" in .env with actual API key from https://aistudio.google.com/app/apikey');
+      }
       return generateMockPlan(project);
     }
 
     console.log('🤖 Generating AI plan using Gemini 2.0 Flash...');
+    console.log('   Project:', project.title);
+    console.log('   Type:', project.type);
+    console.log('   Experience:', project.experience_level);
     
     // Use Gemini 2.0 Flash (latest model as of December 2024)
     const model = genAI.getGenerativeModel({ 
@@ -74,6 +88,8 @@ IMPORTANT:
     const response = await result.response;
     const text = response.text();
 
+    console.log('📥 Received AI response');
+
     // Extract JSON from response (handle markdown code blocks)
     let jsonText = text;
     const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -83,17 +99,19 @@ IMPORTANT:
 
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('Could not parse AI response:', text);
+      console.error('❌ Could not parse AI response');
       throw new Error('Could not parse AI response');
     }
 
     const planData = JSON.parse(jsonMatch[0]);
-    console.log('✅ AI plan generated successfully using Gemini 2.0 Flash');
+    console.log('✅ AI plan generated successfully!');
+    console.log('   Components:', planData.components.length);
+    console.log('   Steps:', planData.steps.length);
     return planData;
   } catch (error) {
     console.error('❌ AI generation error:', error.message);
     if (error.message.includes('API key')) {
-      console.error('API key error - please check your Gemini API key');
+      console.error('🔑 API key error - please verify your key at https://aistudio.google.com/app/apikey');
     }
     console.log('📦 Falling back to mock plan');
     return generateMockPlan(project);
@@ -101,6 +119,8 @@ IMPORTANT:
 };
 
 function generateMockPlan(project) {
+  console.log('📦 Generating mock plan for:', project.title);
+  
   const projectType = project.type.toLowerCase();
   let components, steps;
 
