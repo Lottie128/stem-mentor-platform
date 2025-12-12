@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Loader from './components/Loader';
 import Header from './components/Header';
+import ParticlesBackground from './components/ParticlesBackground';
 import Login from './pages/Login';
 import NotActive from './pages/NotActive';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -10,6 +11,8 @@ import ProjectReview from './pages/admin/ProjectReview';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ProjectSubmit from './pages/student/ProjectSubmit';
 import ProjectView from './pages/student/ProjectView';
+import Awards from './pages/student/Awards';
+import Portfolio from './pages/student/Portfolio';
 import './styles/App.css';
 
 function App() {
@@ -17,13 +20,11 @@ function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Check for stored user data
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
     
-    // Simulate initial load
     setTimeout(() => {
       setLoading(false);
     }, 2000);
@@ -47,11 +48,11 @@ function App() {
   return (
     <Router>
       <div className="app">
+        <ParticlesBackground />
         {user && <Header user={user} onLogout={handleLogout} />}
         
         <main className="app-main">
           <Routes>
-            {/* Public routes */}
             <Route 
               path="/login" 
               element={user ? <Navigate to={user.role === 'ADMIN' ? '/admin' : '/student'} /> : <Login onLogin={handleLogin} />} 
@@ -85,8 +86,15 @@ function App() {
               path="/student/projects/:projectId" 
               element={user?.role === 'STUDENT' && user?.is_active ? <ProjectView /> : <Navigate to="/login" />} 
             />
+            <Route 
+              path="/student/awards" 
+              element={user?.role === 'STUDENT' && user?.is_active ? <Awards /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/student/portfolio" 
+              element={user?.role === 'STUDENT' && user?.is_active ? <Portfolio /> : <Navigate to="/login" />} 
+            />
 
-            {/* Default redirect */}
             <Route path="*" element={<Navigate to={user ? (user.role === 'ADMIN' ? '/admin' : '/student') : '/login'} />} />
           </Routes>
         </main>

@@ -2,7 +2,9 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f5f7fa;
+  background: #0a0e27;
+  position: relative;
+  z-index: 1;
 }
 
 .app-main {
@@ -11,6 +13,8 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 30px 20px;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {

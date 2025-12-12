@@ -1,10 +1,12 @@
 .app-header {
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   position: sticky;
   top: 0;
   z-index: 100;
-  border-bottom: 2px solid #667eea;
 }
 
 .header-container {
@@ -37,14 +39,17 @@
 .brand-name {
   font-size: 24px;
   font-weight: 700;
-  color: #1d1d1f;
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin: 0;
   line-height: 1.2;
 }
 
 .brand-tagline {
   font-size: 12px;
-  color: #667eea;
+  color: #8b5cf6;
   margin: 2px 0 0;
   font-weight: 500;
   letter-spacing: 0.5px;
@@ -66,19 +71,19 @@
 .user-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1d1d1f;
+  color: #e2e8f0;
 }
 
 .user-role {
   font-size: 11px;
-  color: #667eea;
+  color: #8b5cf6;
   text-transform: uppercase;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
 
 .logout-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: #ffffff;
   border: none;
   padding: 10px 24px;
@@ -87,16 +92,25 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
 }
 
 .logout-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
 }
 
 .logout-btn:active {
   transform: translateY(0);
+}
+
+/* Update animated logo colors for dark theme */
+.app-header .animated-logo svg path {
+  stroke: #8b5cf6;
+}
+
+.app-header .animated-logo .orbit-dot {
+  fill: #ec4899;
 }
 
 @media (max-width: 768px) {
