@@ -8,6 +8,10 @@ const StudentDashboard = () => {
   const [awards, setAwards] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [featureRequest, setFeatureRequest] = useState('');
+  const [submittingFeature, setSubmittingFeature] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -28,6 +32,33 @@ const StudentDashboard = () => {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openFeatureRequest = (project) => {
+    setSelectedProject(project);
+    setShowFeatureModal(true);
+    setFeatureRequest('');
+  };
+
+  const submitFeatureRequest = async () => {
+    if (!featureRequest.trim()) {
+      alert('Please describe the feature you want to add');
+      return;
+    }
+
+    setSubmittingFeature(true);
+    try {
+      await axios.post(`/api/student/projects/${selectedProject.id}/feature-request`, {
+        feature_description: featureRequest
+      });
+      alert('✅ Feature request submitted! Your mentor will update your project plan.');
+      setShowFeatureModal(false);
+      setFeatureRequest('');
+    } catch (error) {
+      alert('❌ Failed to submit feature request');
+    } finally {
+      setSubmittingFeature(false);
     }
   };
 
@@ -142,6 +173,8 @@ const StudentDashboard = () => {
           <div className="projects-grid">
             {projects.map(project => {
               const badge = getStatusBadge(project.status);
+              const canRequestFeature = project.status === 'PLAN_READY' || project.status === 'IN_PROGRESS';
+              
               return (
                 <div key={project.id} className="project-card glass-card">
                   <div className="project-header">
@@ -165,9 +198,20 @@ const StudentDashboard = () => {
                     {project.status === 'PENDING_REVIEW' ? (
                       <div className="waiting-text">⏳ Waiting for mentor review...</div>
                     ) : (
-                      <Link to={`/student/projects/${project.id}`} className="view-project-btn">
-                        View Details →
-                      </Link>
+                      <div className="project-actions">
+                        <Link to={`/student/projects/${project.id}`} className="view-project-btn">
+                          View Details →
+                        </Link>
+                        {canRequestFeature && (
+                          <button 
+                            onClick={() => openFeatureRequest(project)} 
+                            className="feature-request-btn"
+                            title="Add new features to this project"
+                          >
+                            ✨ Request Feature
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -176,6 +220,42 @@ const StudentDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Feature Request Modal */}
+      {showFeatureModal && (
+        <div className="modal-overlay" onClick={() => setShowFeatureModal(false)}>
+          <div className="modal-content glass-card" onClick={(e) => e.stopPropagation()}>
+            <h3>✨ Request New Feature</h3>
+            <p className="modal-subtitle">Add a new feature to: <strong>{selectedProject?.title}</strong></p>
+            
+            <div className="modal-form">
+              <label>Describe the feature you want to add:</label>
+              <textarea
+                value={featureRequest}
+                onChange={(e) => setFeatureRequest(e.target.value)}
+                placeholder="Example: I want to add a temperature sensor that displays the reading on an LCD screen. This will make the robot more useful for weather monitoring."
+                rows={6}
+              />
+              <p className="help-text">
+                💡 Your mentor will review and update your project plan with new components and steps
+              </p>
+            </div>
+
+            <div className="modal-actions">
+              <button onClick={() => setShowFeatureModal(false)} className="cancel-btn">
+                Cancel
+              </button>
+              <button 
+                onClick={submitFeatureRequest} 
+                disabled={submittingFeature}
+                className="submit-btn"
+              >
+                {submittingFeature ? '⏳ Submitting...' : '✅ Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
