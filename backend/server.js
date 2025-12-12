@@ -7,6 +7,11 @@ const { sequelize } = require('./config/database');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const studentRoutes = require('./routes/student.routes');
+const awardsRoutes = require('./routes/awards.routes');
+const portfolioRoutes = require('./routes/portfolio.routes');
+const ibrRoutes = require('./routes/ibr.routes');
+const submissionsRoutes = require('./routes/submissions.routes');
+const certificatesRoutes = require('./routes/certificates.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,13 +32,23 @@ app.use((req, res, next) => {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'STEM Mentor API is running' });
+  res.json({ 
+    status: 'ok', 
+    message: 'STEM Mentor API is running', 
+    version: '2.0.0',
+    features: ['IBR Applications', 'Step Submissions', 'STEM Certificates', 'Awards']
+  });
 });
 
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/student', studentRoutes);
+app.use('/api/awards', awardsRoutes);
+app.use('/api/portfolio', portfolioRoutes);
+app.use('/api/ibr', ibrRoutes);
+app.use('/api/submissions', submissionsRoutes);
+app.use('/api/certificates', certificatesRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -64,6 +79,8 @@ const startServer = async () => {
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 API: http://localhost:${PORT}`);
+      console.log(`✨ Features: IBR, Submissions, Certificates, Awards`);
     });
   } catch (error) {
     console.error('❌ Unable to start server:', error);
