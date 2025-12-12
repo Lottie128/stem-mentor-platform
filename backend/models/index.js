@@ -1,21 +1,30 @@
-// Central model registry
+const { sequelize } = require('../config/database');
 const User = require('./User');
 const Project = require('./Project');
 const ProjectPlan = require('./ProjectPlan');
-const Award = require('./Award');
-const Portfolio = require('./Portfolio');
-const StepSubmission = require('./StepSubmission');
-const IBRApplication = require('./IBRApplication');
 const Certificate = require('./Certificate');
+const Award = require('./Award');
 
-// Export all models
+// Define associations
+Project.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
+User.hasMany(Project, { as: 'projects', foreignKey: 'student_id' });
+
+Project.hasOne(ProjectPlan, { as: 'plan', foreignKey: 'project_id' });
+ProjectPlan.belongsTo(Project, { as: 'project', foreignKey: 'project_id' });
+
+Certificate.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
+Certificate.belongsTo(Project, { as: 'project', foreignKey: 'project_id' });
+User.hasMany(Certificate, { as: 'certificates', foreignKey: 'student_id' });
+Project.hasMany(Certificate, { as: 'certificates', foreignKey: 'project_id' });
+
+Award.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
+User.hasMany(Award, { as: 'awards', foreignKey: 'student_id' });
+
 module.exports = {
+  sequelize,
   User,
   Project,
   ProjectPlan,
-  Award,
-  Portfolio,
-  StepSubmission,
-  IBRApplication,
-  Certificate
+  Certificate,
+  Award
 };

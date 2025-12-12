@@ -19,7 +19,7 @@ exports.getStats = async (req, res) => {
     });
   } catch (error) {
     console.error('Get stats error:', error);
-    res.status(500).json({ message: 'Failed to fetch statistics' });
+    res.status(500).json({ message: 'Failed to fetch statistics', error: error.message });
   }
 };
 
@@ -27,13 +27,14 @@ exports.getStudents = async (req, res) => {
   try {
     const students = await User.findAll({
       where: { role: 'STUDENT' },
+      attributes: ['id', 'full_name', 'email', 'is_active', 'expires_at', 'created_at', 'age', 'school', 'country'],
       order: [['created_at', 'DESC']]
     });
 
     res.json(students);
   } catch (error) {
     console.error('Get students error:', error);
-    res.status(500).json({ message: 'Failed to fetch students' });
+    res.status(500).json({ message: 'Failed to fetch students', error: error.message });
   }
 };
 
@@ -63,7 +64,7 @@ exports.createStudent = async (req, res) => {
     res.status(201).json(student);
   } catch (error) {
     console.error('Create student error:', error);
-    res.status(500).json({ message: 'Failed to create student' });
+    res.status(500).json({ message: 'Failed to create student', error: error.message });
   }
 };
 
@@ -84,7 +85,7 @@ exports.toggleStudentStatus = async (req, res) => {
     res.json(student);
   } catch (error) {
     console.error('Toggle status error:', error);
-    res.status(500).json({ message: 'Failed to update student status' });
+    res.status(500).json({ message: 'Failed to update student status', error: error.message });
   }
 };
 
@@ -97,20 +98,27 @@ exports.getProjects = async (req, res) => {
         model: User,
         as: 'student',
         attributes: ['id', 'full_name', 'email']
+      }, {
+        model: ProjectPlan,
+        as: 'plan',
+        required: false
       }],
       order: [['created_at', 'DESC']],
       limit: parseInt(limit)
     });
 
-    const formattedProjects = projects.map(p => ({
-      ...p.toJSON(),
-      student_name: p.student?.full_name || 'Unknown'
-    }));
+    const formattedProjects = projects.map(p => {
+      const project = p.toJSON();
+      return {
+        ...project,
+        student_name: project.student?.full_name || 'Unknown'
+      };
+    });
 
     res.json(formattedProjects);
   } catch (error) {
     console.error('Get projects error:', error);
-    res.status(500).json({ message: 'Failed to fetch projects' });
+    res.status(500).json({ message: 'Failed to fetch projects', error: error.message });
   }
 };
 
@@ -127,7 +135,8 @@ exports.getProjectById = async (req, res) => {
         },
         {
           model: ProjectPlan,
-          as: 'plan'
+          as: 'plan',
+          required: false
         }
       ]
     });
@@ -144,7 +153,7 @@ exports.getProjectById = async (req, res) => {
     res.json(formatted);
   } catch (error) {
     console.error('Get project error:', error);
-    res.status(500).json({ message: 'Failed to fetch project' });
+    res.status(500).json({ message: 'Failed to fetch project', error: error.message });
   }
 };
 
@@ -236,7 +245,7 @@ exports.updatePlan = async (req, res) => {
         finalized_by_admin_id: req.user.id
       });
       console.log('✅ Plan created');
-    }
+    } 
 
     if (status) {
       project.status = status;
@@ -247,6 +256,6 @@ exports.updatePlan = async (req, res) => {
     res.json({ project, plan: projectPlan });
   } catch (error) {
     console.error('Update plan error:', error);
-    res.status(500).json({ message: 'Failed to update plan' });
+    res.status(500).json({ message: 'Failed to update plan', error: error.message });
   }
 };
