@@ -85,6 +85,8 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
     const { id, stepIndex } = req.params;
     const { status } = req.body;
 
+    console.log(`\n🔄 Updating step ${stepIndex} to status: ${status}`);
+
     const project = await Project.findOne({
       where: { id, student_id: req.user.id },
       include: [{ model: ProjectPlan, as: 'plan' }]
@@ -101,12 +103,15 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
       steps[stepIndex].status = status;
       plan.steps = steps;
       await plan.save();
+      
+      console.log('✅ Step status updated in database');
 
       // Check if all steps are done
       const allStepsDone = steps.every(step => step.status === 'done');
+      console.log(`   Steps status: ${steps.filter(s => s.status === 'done').length}/${steps.length} done`);
       
       if (allStepsDone && project.status !== 'COMPLETED') {
-        console.log('\n🎉 All steps completed! Marking project as COMPLETED...');
+        console.log('   🎉 All steps completed! Marking project as COMPLETED...');
         project.status = 'COMPLETED';
         await project.save();
 
@@ -114,6 +119,8 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
         const projectCount = await Project.count({
           where: { student_id: req.user.id, status: 'COMPLETED' }
         });
+
+        console.log(`   🏆 Total completed projects: ${projectCount}`);
 
         let achievementTitle = '🎉 First Project Completed!';
         let achievementIcon = '🎉';
@@ -129,34 +136,59 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
           achievementType = 'TEN_PROJECTS';
         }
 
-        await Award.create({
-          student_id: req.user.id,
-          title: achievementTitle,
-          description: `Completed ${projectCount} STEM project(s)`,
-          icon: achievementIcon,
-          award_type: achievementType
+        // Check if achievement already exists
+        const existingAward = await Award.findOne({
+          where: {
+            student_id: req.user.id,
+            award_type: achievementType
+          }
         });
+
+        if (!existingAward) {
+          await Award.create({
+            student_id: req.user.id,
+            title: achievementTitle,
+            description: `Completed ${projectCount} STEM project(s)`,
+            icon: achievementIcon,
+            award_type: achievementType
+          });
+          console.log(`   ✅ Achievement created: ${achievementTitle}`);
+        }
 
         // Create STEM certificate
-        const certNumber = `STEM-${Date.now()}-${req.user.id}`;
-        const verifyCode = `VRF-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-
-        await Certificate.create({
-          student_id: req.user.id,
-          project_id: project.id,
-          certificate_type: 'STEM_ORG',
-          certificate_number: certNumber,
-          verification_code: verifyCode,
-          issue_date: new Date()
+        const existingCert = await Certificate.findOne({
+          where: {
+            student_id: req.user.id,
+            project_id: project.id
+          }
         });
 
-        console.log('✅ Achievement and certificate created!');
+        if (!existingCert) {
+          const certNumber = `STEM-${Date.now()}-${req.user.id}`;
+          const verifyCode = `VRF-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+
+          await Certificate.create({
+            student_id: req.user.id,
+            project_id: project.id,
+            certificate_type: 'STEM_ORG',
+            certificate_number: certNumber,
+            verification_code: verifyCode,
+            issue_date: new Date()
+          });
+          console.log(`   🎓 Certificate created: ${certNumber}`);
+        }
+
+        console.log('   ✅ Project completion processing done!');
       }
     }
 
-    res.json({ plan, project });
+    // Reload fresh data to return
+    await project.reload({ include: [{ model: ProjectPlan, as: 'plan' }] });
+    
+    console.log('✅ Returning updated project\n');
+    res.json(project);
   } catch (error) {
-    console.error('Update step status error:', error);
+    console.error('❌ Update step status error:', error);
     res.status(500).json({ message: 'Failed to update step status' });
   }
 });
