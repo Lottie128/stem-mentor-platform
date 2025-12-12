@@ -151,26 +151,39 @@ exports.getProjectById = async (req, res) => {
 exports.generatePlan = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log('\n=== AI PLAN GENERATION REQUEST ===');
+    console.log('Project ID:', id);
+    console.log('Request from:', req.user?.email);
+    console.log('Timestamp:', new Date().toISOString());
 
     const project = await Project.findByPk(id);
 
     if (!project) {
+      console.error('❌ Project not found:', id);
       return res.status(404).json({ message: 'Project not found' });
     }
 
+    console.log('✅ Project found:', project.title);
+    console.log('Calling AI service...');
+
     // Generate plan using AI service
     const planData = await generateProjectPlan(project);
+
+    console.log('✅ Plan generated, saving to database...');
 
     // Create or update plan
     let plan = await ProjectPlan.findOne({ where: { project_id: id } });
 
     if (plan) {
+      console.log('Updating existing plan...');
       plan.components = planData.components;
       plan.steps = planData.steps;
       plan.safety_notes = planData.safety_notes;
       plan.generated_by_ai = true;
       await plan.save();
     } else {
+      console.log('Creating new plan...');
       plan = await ProjectPlan.create({
         project_id: id,
         components: planData.components,
@@ -180,9 +193,14 @@ exports.generatePlan = async (req, res) => {
       });
     }
 
+    console.log('✅ Plan saved successfully!');
+    console.log('=== GENERATION COMPLETE ===\n');
+
     res.json({ plan });
   } catch (error) {
-    console.error('Generate plan error:', error);
+    console.error('\n❌ GENERATE PLAN ERROR:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('=== GENERATION FAILED ===\n');
     res.status(500).json({ message: error.message || 'Failed to generate plan' });
   }
 };
@@ -191,6 +209,8 @@ exports.updatePlan = async (req, res) => {
   try {
     const { id } = req.params;
     const { plan, status } = req.body;
+
+    console.log('\nUpdating plan for project:', id);
 
     const project = await Project.findByPk(id);
 
@@ -206,6 +226,7 @@ exports.updatePlan = async (req, res) => {
       projectPlan.safety_notes = plan.safety_notes;
       projectPlan.finalized_by_admin_id = req.user.id;
       await projectPlan.save();
+      console.log('✅ Plan updated');
     } else {
       projectPlan = await ProjectPlan.create({
         project_id: id,
@@ -214,11 +235,13 @@ exports.updatePlan = async (req, res) => {
         safety_notes: plan.safety_notes,
         finalized_by_admin_id: req.user.id
       });
+      console.log('✅ Plan created');
     }
 
     if (status) {
       project.status = status;
       await project.save();
+      console.log('✅ Project status updated to:', status);
     }
 
     res.json({ project, plan: projectPlan });
