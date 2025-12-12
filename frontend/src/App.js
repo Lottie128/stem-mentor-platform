@@ -13,6 +13,7 @@ import ProjectSubmit from './pages/student/ProjectSubmit';
 import ProjectView from './pages/student/ProjectView';
 import Awards from './pages/student/Awards';
 import Portfolio from './pages/student/Portfolio';
+import IBRApplication from './pages/student/IBRApplication';
 import './styles/App.css';
 
 function App() {
@@ -93,6 +94,10 @@ function App() {
             <Route 
               path="/student/portfolio" 
               element={user?.role === 'STUDENT' && user?.is_active ? <Portfolio /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/student/ibr-apply" 
+              element={user?.role === 'STUDENT' && user?.is_active ? <IBRApplication /> : <Navigate to="/login" />} 
             />
 
             <Route path="*" element={<Navigate to={user ? (user.role === 'ADMIN' ? '/admin' : '/student') : '/login'} />} />
