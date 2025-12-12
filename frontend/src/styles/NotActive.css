@@ -3,90 +3,138 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #0a0e27;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.not-active-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(239, 68, 68, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+  pointer-events: none;
 }
 
 .not-active-card {
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 50px 40px;
-  max-width: 500px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  padding: 60px 50px;
+  max-width: 600px;
   text-align: center;
+  position: relative;
+  z-index: 10;
 }
 
 .icon-warning {
-  font-size: 64px;
-  margin-bottom: 20px;
+  font-size: 80px;
+  margin-bottom: 25px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
 .not-active-card h1 {
-  font-size: 28px;
-  color: #1d1d1f;
+  font-size: 32px;
+  color: #e2e8f0;
   margin-bottom: 20px;
 }
 
 .not-active-card p {
-  color: #6b7280;
+  color: #94a3b8;
   font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 15px;
+  line-height: 1.7;
+  margin-bottom: 18px;
 }
 
 .not-active-card ul {
   list-style: none;
   padding: 0;
-  margin: 20px 0;
+  margin: 30px 0;
   text-align: left;
 }
 
 .not-active-card ul li {
-  padding: 10px 0;
-  padding-left: 25px;
+  padding: 12px 0;
+  padding-left: 35px;
   position: relative;
-  color: #4b5563;
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .not-active-card ul li:before {
   content: '•';
   position: absolute;
   left: 0;
-  color: #667eea;
+  color: #ef4444;
   font-weight: bold;
-  font-size: 20px;
+  font-size: 24px;
 }
 
 .contact-text {
   font-weight: 600;
-  color: #1d1d1f !important;
-  margin-top: 30px !important;
+  color: #e2e8f0 !important;
+  margin-top: 35px !important;
+  font-size: 17px !important;
 }
 
 .contact-info {
-  background: #f9fafb;
-  padding: 20px;
-  border-radius: 8px;
-  margin: 20px 0;
+  background: rgba(30, 41, 59, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 25px;
+  border-radius: 12px;
+  margin: 25px 0;
 }
 
 .contact-info p {
-  margin: 8px 0;
+  margin: 10px 0;
+  color: #a78bfa;
+  font-weight: 600;
 }
 
 .back-button {
   display: inline-block;
-  margin-top: 20px;
-  padding: 12px 30px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin-top: 25px;
+  padding: 14px 36px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: #ffffff;
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
   transition: all 0.3s;
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
 }
 
 .back-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 12px 32px rgba(139, 92, 246, 0.6);
+}
+
+@media (max-width: 768px) {
+  .not-active-card {
+    padding: 40px 30px;
+  }
+
+  .not-active-card h1 {
+    font-size: 26px;
+  }
 }
