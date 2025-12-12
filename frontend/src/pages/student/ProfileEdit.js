@@ -5,18 +5,25 @@ import '../../styles/ProfileEdit.css';
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
     full_name: '',
-    email: '',
     age: '',
     school: '',
     country: 'India',
     bio: '',
-    profile_picture: ''
+    profile_picture: '',
+    skills: [],
+    social_links: {
+      github: '',
+      linkedin: '',
+      youtube: '',
+      twitter: '',
+      website: ''
+    }
   });
-  const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -27,16 +34,20 @@ const ProfileEdit = () => {
       const response = await axios.get('/api/auth/me');
       setProfile({
         full_name: response.data.full_name || '',
-        email: response.data.email || '',
         age: response.data.age || '',
         school: response.data.school || '',
         country: response.data.country || 'India',
         bio: response.data.bio || '',
-        profile_picture: response.data.profile_picture || ''
+        profile_picture: response.data.profile_picture || '',
+        skills: response.data.skills || [],
+        social_links: response.data.social_links || {
+          github: '',
+          linkedin: '',
+          youtube: '',
+          twitter: '',
+          website: ''
+        }
       });
-      if (response.data.profile_picture) {
-        setImagePreview(response.data.profile_picture);
-      }
     } catch (error) {
       console.error('Failed to fetch profile:', error);
     } finally {
@@ -44,37 +55,48 @@ const ProfileEdit = () => {
     }
   };
 
-  const handleImageChange = (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert('⚠️ Image size must be less than 2MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setImagePreview(base64String);
-        setProfile({ ...profile, profile_picture: base64String });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('⚠️ Image too large! Please upload an image under 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setProfile({ ...profile, profile_picture: reader.result });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const addSkill = () => {
+    if (newSkill.trim() && !profile.skills.includes(newSkill.trim())) {
+      setProfile({ ...profile, skills: [...profile.skills, newSkill.trim()] });
+      setNewSkill('');
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const removeSkill = (skill) => {
+    setProfile({ ...profile, skills: profile.skills.filter(s => s !== skill) });
+  };
+
+  const handleSocialLinkChange = (platform, value) => {
+    setProfile({
+      ...profile,
+      social_links: {
+        ...profile.social_links,
+        [platform]: value
+      }
+    });
+  };
+
+  const handleSave = async () => {
     setSaving(true);
-    
     try {
       await axios.put('/api/auth/profile', profile);
       alert('✅ Profile updated successfully!');
-      
-      // Update localStorage
-      const storedUser = JSON.parse(localStorage.getItem('user'));
-      const updatedUser = { ...storedUser, ...profile };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      
       navigate('/student');
     } catch (error) {
       alert('❌ Failed to update profile');
@@ -88,41 +110,38 @@ const ProfileEdit = () => {
   return (
     <div className="profile-edit">
       <div className="profile-header glass-card">
-        <button onClick={() => navigate('/student')} className="back-btn">← Back</button>
         <h1>✏️ Edit Profile</h1>
-        <p>Update your personal information and profile picture</p>
+        <p>Update your information to showcase on your portfolio</p>
       </div>
 
-      <div className="profile-form-container glass-card">
-        <form onSubmit={handleSubmit}>
-          {/* Profile Picture */}
-          <div className="profile-picture-section">
-            <div className="avatar-preview">
-              {imagePreview ? (
-                <img src={imagePreview} alt="Profile" />
-              ) : (
-                <div className="avatar-placeholder">
-                  <span>👤</span>
-                </div>
-              )}
-            </div>
-            <div className="upload-controls">
-              <label htmlFor="profile-picture-input" className="upload-btn">
-                📷 Choose Photo
-              </label>
-              <input
-                id="profile-picture-input"
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                style={{ display: 'none' }}
-              />
-              <p className="upload-hint">JPG, PNG or GIF (Max 2MB)</p>
-            </div>
+      <div className="profile-form glass-card">
+        {/* Profile Picture */}
+        <div className="form-section">
+          <h3>📸 Profile Picture</h3>
+          <div className="profile-picture-upload">
+            {profile.profile_picture ? (
+              <img src={profile.profile_picture} alt="Profile" className="preview-image" />
+            ) : (
+              <div className="preview-placeholder">👤</div>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              id="profile-pic"
+              style={{ display: 'none' }}
+            />
+            <label htmlFor="profile-pic" className="upload-btn">
+              📷 {profile.profile_picture ? 'Change' : 'Upload'} Photo
+            </label>
+            <p className="help-text">Max size: 2MB</p>
           </div>
+        </div>
 
-          {/* Form Fields */}
-          <div className="form-row">
+        {/* Basic Info */}
+        <div className="form-section">
+          <h3>📄 Basic Information</h3>
+          <div className="form-grid">
             <div className="form-group">
               <label>Full Name *</label>
               <input
@@ -133,78 +152,124 @@ const ProfileEdit = () => {
               />
             </div>
             <div className="form-group">
-              <label>Email *</label>
-              <input
-                type="email"
-                value={profile.email}
-                disabled
-                className="disabled-input"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
               <label>Age</label>
               <input
                 type="number"
                 value={profile.age}
                 onChange={(e) => setProfile({ ...profile, age: e.target.value })}
-                min="5"
-                max="25"
-                placeholder="Enter your age"
+              />
+            </div>
+            <div className="form-group">
+              <label>School</label>
+              <input
+                type="text"
+                value={profile.school}
+                onChange={(e) => setProfile({ ...profile, school: e.target.value })}
               />
             </div>
             <div className="form-group">
               <label>Country</label>
-              <select
+              <input
+                type="text"
                 value={profile.country}
                 onChange={(e) => setProfile({ ...profile, country: e.target.value })}
-              >
-                <option value="India">India</option>
-                <option value="USA">United States</option>
-                <option value="UK">United Kingdom</option>
-                <option value="Canada">Canada</option>
-                <option value="Australia">Australia</option>
-                <option value="Zambia">Zambia</option>
-                <option value="Kenya">Kenya</option>
-                <option value="South Africa">South Africa</option>
-                <option value="Other">Other</option>
-              </select>
+              />
             </div>
           </div>
-
-          <div className="form-group">
-            <label>School/Institution</label>
-            <input
-              type="text"
-              value={profile.school}
-              onChange={(e) => setProfile({ ...profile, school: e.target.value })}
-              placeholder="e.g., Delhi Public School"
-            />
-          </div>
-
           <div className="form-group">
             <label>Bio</label>
             <textarea
               value={profile.bio}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+              placeholder="Tell us about yourself, your interests, and your STEM journey..."
               rows={4}
-              placeholder="Tell us about yourself, your interests in STEM, goals..."
-              maxLength={500}
             />
-            <div className="char-count">{profile.bio.length}/500</div>
           </div>
+        </div>
 
-          <div className="form-actions">
-            <button type="button" onClick={() => navigate('/student')} className="cancel-btn">
-              Cancel
-            </button>
-            <button type="submit" className="save-btn" disabled={saving}>
-              {saving ? 'Saving...' : '✅ Save Profile'}
-            </button>
+        {/* Skills */}
+        <div className="form-section">
+          <h3>🛠️ Skills</h3>
+          <div className="skills-input">
+            <input
+              type="text"
+              value={newSkill}
+              onChange={(e) => setNewSkill(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+              placeholder="e.g., Arduino, Python, 3D Design"
+            />
+            <button onClick={addSkill} className="add-skill-btn">➕ Add</button>
           </div>
-        </form>
+          <div className="skills-list">
+            {profile.skills.map((skill, index) => (
+              <div key={index} className="skill-tag">
+                {skill}
+                <button onClick={() => removeSkill(skill)} className="remove-skill">×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Social Links */}
+        <div className="form-section">
+          <h3>🔗 Social Links</h3>
+          <div className="social-links-grid">
+            <div className="form-group">
+              <label>🐙 GitHub</label>
+              <input
+                type="url"
+                value={profile.social_links.github}
+                onChange={(e) => handleSocialLinkChange('github', e.target.value)}
+                placeholder="https://github.com/username"
+              />
+            </div>
+            <div className="form-group">
+              <label>💔 LinkedIn</label>
+              <input
+                type="url"
+                value={profile.social_links.linkedin}
+                onChange={(e) => handleSocialLinkChange('linkedin', e.target.value)}
+                placeholder="https://linkedin.com/in/username"
+              />
+            </div>
+            <div className="form-group">
+              <label>🎥 YouTube</label>
+              <input
+                type="url"
+                value={profile.social_links.youtube}
+                onChange={(e) => handleSocialLinkChange('youtube', e.target.value)}
+                placeholder="https://youtube.com/@username"
+              />
+            </div>
+            <div className="form-group">
+              <label>🐦 Twitter/X</label>
+              <input
+                type="url"
+                value={profile.social_links.twitter}
+                onChange={(e) => handleSocialLinkChange('twitter', e.target.value)}
+                placeholder="https://twitter.com/username"
+              />
+            </div>
+            <div className="form-group full-width">
+              <label>🌐 Website</label>
+              <input
+                type="url"
+                value={profile.social_links.website}
+                onChange={(e) => handleSocialLinkChange('website', e.target.value)}
+                placeholder="https://yourwebsite.com"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button onClick={() => navigate('/student')} className="cancel-btn">
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={saving} className="save-btn">
+            {saving ? '⏳ Saving...' : '✅ Save Changes'}
+          </button>
+        </div>
       </div>
     </div>
   );
