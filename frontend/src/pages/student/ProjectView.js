@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../styles/ProjectView.css';
@@ -18,11 +18,7 @@ const ProjectView = () => {
     notes: ''
   });
 
-  useEffect(() => {
-    fetchProjectData();
-  }, [projectId]);
-
-  const fetchProjectData = async () => {
+  const fetchProjectData = useCallback(async () => {
     try {
       const [projectRes, submissionsRes, certsRes] = await Promise.all([
         axios.get(`/api/student/projects/${projectId}`),
@@ -38,7 +34,11 @@ const ProjectView = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchProjectData();
+  }, [fetchProjectData]);
 
   const openSubmissionModal = (step, stepIndex) => {
     setCurrentStep({ ...step, index: stepIndex });

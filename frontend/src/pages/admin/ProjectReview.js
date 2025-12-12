@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../../styles/ProjectReview.css';
@@ -12,11 +12,7 @@ const ProjectReview = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    fetchProject();
-  }, [projectId]);
-
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       const response = await axios.get(`/api/admin/projects/${projectId}`);
       setProject(response.data);
@@ -28,7 +24,11 @@ const ProjectReview = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchProject();
+  }, [fetchProject]);
 
   const generateAIPlan = async () => {
     setGenerating(true);
@@ -45,7 +45,7 @@ const ProjectReview = () => {
   };
 
   const regenerateAIPlan = async () => {
-    if (!confirm('🔄 Regenerate AI plan? This will replace the current plan.')) return;
+    if (!window.confirm('🔄 Regenerate AI plan? This will replace the current plan.')) return;
     setGenerating(true);
     try {
       const response = await axios.post(`/api/admin/projects/${projectId}/generate-plan`);
