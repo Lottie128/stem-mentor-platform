@@ -1,14 +1,26 @@
+require('dotenv').config();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY || GEMINI_API_KEY === 'my key') {
+  console.warn('⚠️ Warning: Gemini API key not configured properly');
+  console.warn('Please set GEMINI_API_KEY in your .env file');
+  console.warn('Get your key at: https://aistudio.google.com/app/apikey');
+}
+
+const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 exports.generateProjectPlan = async (project) => {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      console.log('No Gemini API key found, using mock plan');
+    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'my key' || !genAI) {
+      console.log('❌ No valid Gemini API key found, using mock plan');
+      console.log('Current key:', GEMINI_API_KEY ? 'Set but invalid' : 'Not set');
       return generateMockPlan(project);
     }
 
+    console.log('🤖 Generating AI plan using Gemini 2.0 Flash...');
+    
     // Use Gemini 2.0 Flash (latest model as of December 2024)
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-2.0-flash-exp',
@@ -79,8 +91,11 @@ IMPORTANT:
     console.log('✅ AI plan generated successfully using Gemini 2.0 Flash');
     return planData;
   } catch (error) {
-    console.error('AI generation error:', error.message);
-    console.log('Falling back to mock plan');
+    console.error('❌ AI generation error:', error.message);
+    if (error.message.includes('API key')) {
+      console.error('API key error - please check your Gemini API key');
+    }
+    console.log('📦 Falling back to mock plan');
     return generateMockPlan(project);
   }
 };
