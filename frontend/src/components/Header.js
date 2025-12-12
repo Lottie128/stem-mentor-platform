@@ -21,42 +21,9 @@ const Header = ({ user, onLogout }) => {
     <header className="app-header glass-card">
       <div className="header-container">
         <Link to={user?.role === 'ADMIN' ? '/admin' : '/student'} className="logo">
-          <div className="logo-icon animated-brain">
-            <svg viewBox="0 0 100 100" width="40" height="40">
-              <defs>
-                <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" className="gradient-start" />
-                  <stop offset="100%" className="gradient-end" />
-                </linearGradient>
-              </defs>
-              {/* Left hemisphere */}
-              <path d="M 30 50 Q 20 30, 35 20 Q 40 15, 45 20 Q 48 18, 50 20" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M 30 50 Q 25 60, 32 70 Q 38 75, 45 72 Q 48 74, 50 72" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M 35 35 Q 30 40, 35 45" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="2.5" strokeLinecap="round"/>
-              <path d="M 35 55 Q 30 60, 35 65" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="2.5" strokeLinecap="round"/>
-              
-              {/* Right hemisphere */}
-              <path d="M 70 50 Q 80 30, 65 20 Q 60 15, 55 20 Q 52 18, 50 20" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M 70 50 Q 75 60, 68 70 Q 62 75, 55 72 Q 52 74, 50 72" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="3" strokeLinecap="round"/>
-              <path d="M 65 35 Q 70 40, 65 45" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="2.5" strokeLinecap="round"/>
-              <path d="M 65 55 Q 70 60, 65 65" 
-                    fill="none" stroke="url(#brainGradient)" strokeWidth="2.5" strokeLinecap="round"/>
-              
-              {/* Neural connections */}
-              <circle cx="35" cy="30" r="2" fill="url(#brainGradient)" className="pulse-node"/>
-              <circle cx="45" cy="40" r="2" fill="url(#brainGradient)" className="pulse-node" style={{animationDelay: '0.3s'}}/>
-              <circle cx="35" cy="60" r="2" fill="url(#brainGradient)" className="pulse-node" style={{animationDelay: '0.6s'}}/>
-              <circle cx="65" cy="30" r="2" fill="url(#brainGradient)" className="pulse-node" style={{animationDelay: '0.2s'}}/>
-              <circle cx="55" cy="40" r="2" fill="url(#brainGradient)" className="pulse-node" style={{animationDelay: '0.5s'}}/>
-              <circle cx="65" cy="60" r="2" fill="url(#brainGradient)" className="pulse-node" style={{animationDelay: '0.4s'}}/>
-            </svg>
+          <div className="logo-icon animated-st">
+            <span className="st-s">S</span>
+            <span className="st-t">T</span>
           </div>
           <span className="logo-text">STEM Mentor</span>
         </Link>
