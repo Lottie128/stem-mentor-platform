@@ -108,7 +108,7 @@ async function processProjectCompletion(projectId, studentId) {
         const existingAward = await Award.findOne({
           where: {
             student_id: studentId,
-            title: achievement.title
+            award_type: achievement.type
           }
         });
 
@@ -118,7 +118,7 @@ async function processProjectCompletion(projectId, studentId) {
             title: achievement.title,
             description: achievement.description,
             icon: achievement.icon,
-            awarded_by: req.user.id // Admin who approved the plan
+            award_type: achievement.type
           });
           console.log(`   ✅ Created achievement: ${achievement.title}`);
         } else {
@@ -158,7 +158,7 @@ async function processProjectCompletion(projectId, studentId) {
   }
 }
 
-// Update step status - THIS IS THE KEY FIX
+// Update step status - THE KEY FIX
 router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
   try {
     const { id, stepIndex } = req.params;
@@ -186,18 +186,22 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
     const index = parseInt(stepIndex);
     
     if (index >= 0 && index < steps.length) {
+      const oldStatus = steps[index].status;
       steps[index].status = status;
       plan.steps = steps;
+      
+      // Mark plan as changed to force Sequelize to update JSONB field
+      plan.changed('steps', true);
       await plan.save();
       
-      console.log('✅ Step status updated in database');
+      console.log(`✅ Step ${index} updated: ${oldStatus || 'not_started'} → ${status}`);
 
       // Check if all steps are done
       const totalSteps = steps.length;
       const completedSteps = steps.filter(step => step.status === 'done').length;
       const allStepsDone = completedSteps === totalSteps;
       
-      console.log(`   Progress: ${completedSteps}/${totalSteps} steps done`);
+      console.log(`   Progress: ${completedSteps}/${totalSteps} steps done (${Math.round((completedSteps/totalSteps)*100)}%)`);
       
       // If all steps are done AND project is not already completed, mark as completed
       if (allStepsDone && project.status !== 'COMPLETED') {
@@ -213,8 +217,6 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
       } else if (allStepsDone) {
         console.log('   ℹ️  All steps done but project already marked as COMPLETED');
       } else {
-        console.log(`   ℹ️  Progress: ${completedSteps}/${totalSteps} steps completed`);
-        
         // Update project status to IN_PROGRESS if at least one step is done
         if (completedSteps > 0 && project.status === 'PLAN_READY') {
           project.status = 'IN_PROGRESS';
@@ -234,7 +236,7 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
     res.json(project);
   } catch (error) {
     console.error('❌ Update step status error:', error);
-    res.status(500).json({ message: 'Failed to update step status' });
+    res.status(500).json({ message: 'Failed to update step status', error: error.message });
   }
 });
 
@@ -252,8 +254,6 @@ router.post('/projects/:id/feature-request', async (req, res) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Here you could store feature requests in a separate table
-    // For now, just return success
     console.log(`Feature request for project ${id}:`, feature_description);
     
     res.json({ message: 'Feature request submitted successfully' });
