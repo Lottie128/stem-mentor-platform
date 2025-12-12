@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const Project = require('./Project');
-const User = require('./User');
 
 const ProjectPlan = sequelize.define('ProjectPlan', {
   id: {
@@ -49,11 +47,5 @@ const ProjectPlan = sequelize.define('ProjectPlan', {
   timestamps: true,
   underscored: true
 });
-
-// Associations
-ProjectPlan.belongsTo(Project, { foreignKey: 'project_id', as: 'project' });
-Project.hasOne(ProjectPlan, { foreignKey: 'project_id', as: 'plan' });
-
-ProjectPlan.belongsTo(User, { foreignKey: 'finalized_by_admin_id', as: 'admin' });
 
 module.exports = ProjectPlan;
