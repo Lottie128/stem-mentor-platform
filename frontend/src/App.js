@@ -14,6 +14,9 @@ import ProjectView from './pages/student/ProjectView';
 import Awards from './pages/student/Awards';
 import Portfolio from './pages/student/Portfolio';
 import IBRApplication from './pages/student/IBRApplication';
+import ProfileEdit from './pages/student/ProfileEdit';
+import CertificateView from './pages/CertificateView';
+import PublicPortfolio from './pages/PublicPortfolio';
 import './styles/App.css';
 
 function App() {
@@ -60,6 +63,10 @@ function App() {
             />
             <Route path="/not-active" element={<NotActive />} />
 
+            {/* Public routes */}
+            <Route path="/portfolio/:username" element={<PublicPortfolio />} />
+            <Route path="/certificate/:certificateId" element={<CertificateView />} />
+
             {/* Admin routes */}
             <Route 
               path="/admin" 
@@ -94,6 +101,10 @@ function App() {
             <Route 
               path="/student/portfolio" 
               element={user?.role === 'STUDENT' && user?.is_active ? <Portfolio /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/student/profile" 
+              element={user?.role === 'STUDENT' && user?.is_active ? <ProfileEdit /> : <Navigate to="/login" />} 
             />
             <Route 
               path="/student/ibr-apply" 
