@@ -6,6 +6,7 @@ const ProjectPlan = require('../models/ProjectPlan');
 const User = require('../models/User');
 const Certificate = require('../models/Certificate');
 const Award = require('../models/Award');
+const crypto = require('crypto');
 
 // Protect all student routes
 router.use(authenticate);
@@ -79,13 +80,93 @@ router.post('/projects', async (req, res) => {
   }
 });
 
-// Update step status
+// Helper function to create achievements and certificates
+async function processProjectCompletion(projectId, studentId) {
+  console.log(`\n🎉 Processing project completion for project ${projectId}, student ${studentId}`);
+  
+  try {
+    // Count total completed projects for this student
+    const completedCount = await Project.count({
+      where: {
+        student_id: studentId,
+        status: 'COMPLETED'
+      }
+    });
+
+    console.log(`   Total completed projects: ${completedCount}`);
+
+    // Create achievements based on milestones
+    const achievements = [
+      { count: 1, type: 'FIRST_PROJECT', title: '🎉 First Project Completed!', icon: '🎉', description: 'Successfully completed your first STEM project' },
+      { count: 5, type: 'FIVE_PROJECTS', title: '🎆 Five Projects Milestone!', icon: '🎆', description: 'Completed 5 amazing STEM projects' },
+      { count: 10, type: 'TEN_PROJECTS', title: '🔥 Ten Projects Champion!', icon: '🔥', description: 'Extraordinary achievement - 10 STEM projects completed!' }
+    ];
+
+    for (const achievement of achievements) {
+      if (completedCount === achievement.count) {
+        // Check if award already exists
+        const existingAward = await Award.findOne({
+          where: {
+            student_id: studentId,
+            title: achievement.title
+          }
+        });
+
+        if (!existingAward) {
+          await Award.create({
+            student_id: studentId,
+            title: achievement.title,
+            description: achievement.description,
+            icon: achievement.icon,
+            awarded_by: req.user.id // Admin who approved the plan
+          });
+          console.log(`   ✅ Created achievement: ${achievement.title}`);
+        } else {
+          console.log(`   ℹ️  Achievement already exists: ${achievement.title}`);
+        }
+      }
+    }
+
+    // Create certificate for this project
+    const existingCert = await Certificate.findOne({
+      where: {
+        student_id: studentId,
+        project_id: projectId
+      }
+    });
+
+    if (!existingCert) {
+      const certNumber = `STEM-${Date.now()}-${studentId}`;
+      const verifyCode = crypto.randomBytes(8).toString('hex').toUpperCase();
+
+      await Certificate.create({
+        student_id: studentId,
+        project_id: projectId,
+        certificate_type: 'STEM_ORG',
+        certificate_number: certNumber,
+        verification_code: verifyCode,
+        issue_date: new Date()
+      });
+      console.log(`   🎓 Created certificate: ${certNumber}`);
+    } else {
+      console.log(`   ℹ️  Certificate already exists for this project`);
+    }
+
+    console.log('✅ Project completion processing done!\n');
+  } catch (error) {
+    console.error('❌ Error processing project completion:', error);
+  }
+}
+
+// Update step status - THIS IS THE KEY FIX
 router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
   try {
     const { id, stepIndex } = req.params;
     const { status } = req.body;
 
     console.log(`\n🔄 Updating step ${stepIndex} to status: ${status}`);
+    console.log(`   Project ID: ${id}`);
+    console.log(`   User: ${req.user.email}`);
 
     const project = await Project.findOne({
       where: { id, student_id: req.user.id },
@@ -93,93 +174,57 @@ router.patch('/projects/:id/steps/:stepIndex', async (req, res) => {
     });
 
     if (!project || !project.plan) {
+      console.error('❌ Project or plan not found');
       return res.status(404).json({ message: 'Project or plan not found' });
     }
 
+    console.log(`   Current project status: ${project.status}`);
+
+    // Update the step status
     const plan = project.plan;
     const steps = [...plan.steps];
+    const index = parseInt(stepIndex);
     
-    if (stepIndex >= 0 && stepIndex < steps.length) {
-      steps[stepIndex].status = status;
+    if (index >= 0 && index < steps.length) {
+      steps[index].status = status;
       plan.steps = steps;
       await plan.save();
       
       console.log('✅ Step status updated in database');
 
       // Check if all steps are done
-      const allStepsDone = steps.every(step => step.status === 'done');
-      console.log(`   Steps status: ${steps.filter(s => s.status === 'done').length}/${steps.length} done`);
+      const totalSteps = steps.length;
+      const completedSteps = steps.filter(step => step.status === 'done').length;
+      const allStepsDone = completedSteps === totalSteps;
       
+      console.log(`   Progress: ${completedSteps}/${totalSteps} steps done`);
+      
+      // If all steps are done AND project is not already completed, mark as completed
       if (allStepsDone && project.status !== 'COMPLETED') {
         console.log('   🎉 All steps completed! Marking project as COMPLETED...');
+        
         project.status = 'COMPLETED';
         await project.save();
+        
+        console.log('   ✅ Project marked as COMPLETED');
 
-        // Create achievement
-        const projectCount = await Project.count({
-          where: { student_id: req.user.id, status: 'COMPLETED' }
-        });
-
-        console.log(`   🏆 Total completed projects: ${projectCount}`);
-
-        let achievementTitle = '🎉 First Project Completed!';
-        let achievementIcon = '🎉';
-        let achievementType = 'FIRST_PROJECT';
-
-        if (projectCount === 5) {
-          achievementTitle = '🎆 Five Projects Milestone!';
-          achievementIcon = '🎆';
-          achievementType = 'FIVE_PROJECTS';
-        } else if (projectCount === 10) {
-          achievementTitle = '🔥 Ten Projects Champion!';
-          achievementIcon = '🔥';
-          achievementType = 'TEN_PROJECTS';
+        // Process achievements and certificates
+        await processProjectCompletion(project.id, req.user.id);
+      } else if (allStepsDone) {
+        console.log('   ℹ️  All steps done but project already marked as COMPLETED');
+      } else {
+        console.log(`   ℹ️  Progress: ${completedSteps}/${totalSteps} steps completed`);
+        
+        // Update project status to IN_PROGRESS if at least one step is done
+        if (completedSteps > 0 && project.status === 'PLAN_READY') {
+          project.status = 'IN_PROGRESS';
+          await project.save();
+          console.log('   ✅ Project status updated to IN_PROGRESS');
         }
-
-        // Check if achievement already exists
-        const existingAward = await Award.findOne({
-          where: {
-            student_id: req.user.id,
-            award_type: achievementType
-          }
-        });
-
-        if (!existingAward) {
-          await Award.create({
-            student_id: req.user.id,
-            title: achievementTitle,
-            description: `Completed ${projectCount} STEM project(s)`,
-            icon: achievementIcon,
-            award_type: achievementType
-          });
-          console.log(`   ✅ Achievement created: ${achievementTitle}`);
-        }
-
-        // Create STEM certificate
-        const existingCert = await Certificate.findOne({
-          where: {
-            student_id: req.user.id,
-            project_id: project.id
-          }
-        });
-
-        if (!existingCert) {
-          const certNumber = `STEM-${Date.now()}-${req.user.id}`;
-          const verifyCode = `VRF-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-
-          await Certificate.create({
-            student_id: req.user.id,
-            project_id: project.id,
-            certificate_type: 'STEM_ORG',
-            certificate_number: certNumber,
-            verification_code: verifyCode,
-            issue_date: new Date()
-          });
-          console.log(`   🎓 Certificate created: ${certNumber}`);
-        }
-
-        console.log('   ✅ Project completion processing done!');
       }
+    } else {
+      console.error(`❌ Invalid step index: ${index}`);
+      return res.status(400).json({ message: 'Invalid step index' });
     }
 
     // Reload fresh data to return

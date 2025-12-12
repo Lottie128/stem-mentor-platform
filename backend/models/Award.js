@@ -31,7 +31,7 @@ const Award = sequelize.define('Award', {
   },
   awarded_by: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true, // Allow null for system-generated awards
     references: {
       model: 'users',
       key: 'id'
