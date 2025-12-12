@@ -7,47 +7,43 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 console.log('\n🔑 Gemini API Key Status:');
 if (!GEMINI_API_KEY) {
   console.log('   ❌ NOT SET - using mock plans');
-} else if (GEMINI_API_KEY === 'my key') {
-  console.log('   ⚠️  PLACEHOLDER DETECTED - Replace "my key" with actual API key');
+} else if (GEMINI_API_KEY === 'my key' || GEMINI_API_KEY.length < 20) {
+  console.log('   ⚠️  INVALID KEY - Replace with actual API key');
   console.log('   📍 Get your key at: https://aistudio.google.com/app/apikey');
-} else if (GEMINI_API_KEY.length < 20) {
-  console.log('   ⚠️  KEY TOO SHORT - likely invalid');
 } else {
   console.log('   ✅ CONFIGURED - Key length:', GEMINI_API_KEY.length);
   console.log('   🚀 AI generation enabled!');
 }
 console.log('');
 
-const genAI = (GEMINI_API_KEY && GEMINI_API_KEY !== 'my key') ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const genAI = (GEMINI_API_KEY && GEMINI_API_KEY !== 'my key' && GEMINI_API_KEY.length > 20) 
+  ? new GoogleGenerativeAI(GEMINI_API_KEY) 
+  : null;
 
 exports.generateProjectPlan = async (project) => {
   try {
-    if (!GEMINI_API_KEY || GEMINI_API_KEY === 'my key' || !genAI) {
+    if (!genAI) {
       console.log('❌ No valid Gemini API key - using mock plan');
-      if (GEMINI_API_KEY === 'my key') {
-        console.log('⚠️  Please replace "my key" in .env with actual API key from https://aistudio.google.com/app/apikey');
-      }
       return generateMockPlan(project);
     }
 
-    console.log('🤖 Generating AI plan using Gemini 2.0 Flash...');
+    console.log('🤖 Generating AI plan using Gemini Pro...');
     console.log('   Project:', project.title);
     console.log('   Type:', project.type);
     console.log('   Experience:', project.experience_level);
     
-    // Use Gemini 2.0 Flash (latest model as of December 2024)
+    // Use stable Gemini Pro model
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-pro',
       generationConfig: {
-        temperature: 0.7,
+        temperature: 0.8,
         topK: 40,
         topP: 0.95,
         maxOutputTokens: 2048,
       }
     });
 
-    const prompt = `
-You are a STEM education expert. Generate a detailed, safe, and realistic project plan for a student.
+    const prompt = `You are a STEM education expert. Generate a detailed, safe, and realistic project plan for a student.
 
 Project Details:
 - Title: ${project.title}
@@ -57,62 +53,86 @@ Project Details:
 - Available Tools: ${project.available_tools || 'Basic tools only'}
 - Budget: ${project.budget_range}
 
-Generate a JSON response with this exact structure:
+Generate a JSON response with this EXACT structure (no markdown, just JSON):
 {
   "components": [
-    {"name": "Component name", "description": "Brief description", "quantity": 1, "estimated_cost": "₹XXX"}
+    {"name": "Arduino Uno", "description": "Main microcontroller", "quantity": 1, "estimated_cost": "₹400"}
   ],
   "steps": [
     {
       "step": 1,
-      "title": "Step title",
-      "description": "Detailed instructions",
-      "tag": "home" or "center",
+      "title": "Research Phase",
+      "description": "Study similar projects and gather requirements",
+      "tag": "home",
       "status": "not_started"
     }
   ],
-  "safety_notes": "Important safety considerations for this project. Mark any steps requiring supervision."
+  "safety_notes": "Important safety considerations"
 }
 
-IMPORTANT:
-- Make steps appropriate for ${project.experience_level} level
-- Tag steps as "home" (safe to do alone) or "center" (needs supervision)
-- Consider the budget constraint: ${project.budget_range}
-- Be realistic and practical
-- Include 5-10 clear steps
-- Include 3-8 components
-- Focus on educational value and safety
-`;
+Rules:
+- Steps appropriate for ${project.experience_level} level
+- Tag: "home" (safe alone) or "center" (needs supervision)
+- Budget: ${project.budget_range}
+- Include 6-10 clear, actionable steps
+- Include 4-8 realistic components with costs in ₹
+- Focus on safety and education
+- Return ONLY valid JSON`;
 
+    console.log('📤 Sending request to Gemini API...');
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
 
-    console.log('📥 Received AI response');
+    console.log('📥 Received AI response, parsing...');
 
-    // Extract JSON from response (handle markdown code blocks)
-    let jsonText = text;
-    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      jsonText = codeBlockMatch[1];
+    // Extract JSON from response
+    let jsonText = text.trim();
+    
+    // Remove markdown code blocks if present
+    if (jsonText.includes('```')) {
+      const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        jsonText = codeBlockMatch[1].trim();
+      }
     }
 
+    // Find JSON object
     const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      console.error('❌ Could not parse AI response');
+      console.error('❌ Could not find JSON in response');
+      console.error('Response text:', text.substring(0, 200));
       throw new Error('Could not parse AI response');
     }
 
     const planData = JSON.parse(jsonMatch[0]);
+    
+    // Validate structure
+    if (!planData.components || !planData.steps || !Array.isArray(planData.components) || !Array.isArray(planData.steps)) {
+      console.error('❌ Invalid plan structure');
+      throw new Error('Invalid plan structure from AI');
+    }
+
     console.log('✅ AI plan generated successfully!');
     console.log('   Components:', planData.components.length);
     console.log('   Steps:', planData.steps.length);
+    console.log('   Safety notes:', planData.safety_notes ? 'Yes' : 'No');
+    
     return planData;
+    
   } catch (error) {
     console.error('❌ AI generation error:', error.message);
+    
     if (error.message.includes('API key')) {
-      console.error('🔑 API key error - please verify your key at https://aistudio.google.com/app/apikey');
+      console.error('🔑 API key error - please verify your key');
+      console.error('   Check: https://aistudio.google.com/app/apikey');
+    } else if (error.message.includes('quota')) {
+      console.error('⚠️  API quota exceeded - check your usage');
+    } else if (error.message.includes('PERMISSION_DENIED')) {
+      console.error('🔒 Permission denied - API key may not have access to Gemini API');
+      console.error('   Make sure Gemini API is enabled for your key');
     }
+    
     console.log('📦 Falling back to mock plan');
     return generateMockPlan(project);
   }
@@ -143,12 +163,32 @@ function generateMockPlan(project) {
       { step: 7, title: 'Test and Debug', description: 'Test each function separately, then together. Fix any issues.', tag: 'center', status: 'not_started' },
       { step: 8, title: 'Final Assembly', description: 'Secure all components and add battery pack.', tag: 'center', status: 'not_started' }
     ];
+  } else if (projectType.includes('iot') || projectType.includes('smart')) {
+    components = [
+      { name: 'ESP32', description: 'WiFi-enabled microcontroller', quantity: 1, estimated_cost: '₹500' },
+      { name: 'DHT22 Sensor', description: 'Temperature and humidity sensor', quantity: 1, estimated_cost: '₹200' },
+      { name: 'Relay Module', description: '4-channel relay for controlling devices', quantity: 1, estimated_cost: '₹180' },
+      { name: 'LED Indicators', description: 'Status indication LEDs', quantity: 5, estimated_cost: '₹25' },
+      { name: 'Breadboard & Wires', description: 'For prototyping', quantity: 1, estimated_cost: '₹150' },
+      { name: 'Power Supply', description: '5V 2A adapter', quantity: 1, estimated_cost: '₹200' }
+    ];
+    steps = [
+      { step: 1, title: 'Plan IoT System', description: 'Design the system architecture and identify sensors needed.', tag: 'home', status: 'not_started' },
+      { step: 2, title: 'Setup Development Environment', description: 'Install Arduino IDE and ESP32 board support.', tag: 'home', status: 'not_started' },
+      { step: 3, title: 'Wire Sensors', description: 'Connect sensors to ESP32 on breadboard.', tag: 'center', status: 'not_started' },
+      { step: 4, title: 'Test Sensor Reading', description: 'Write code to read sensor data and display on serial monitor.', tag: 'center', status: 'not_started' },
+      { step: 5, title: 'Setup WiFi Connection', description: 'Configure ESP32 to connect to WiFi network.', tag: 'home', status: 'not_started' },
+      { step: 6, title: 'Implement Control Logic', description: 'Program the automation logic based on sensor readings.', tag: 'home', status: 'not_started' },
+      { step: 7, title: 'Build Web Interface', description: 'Create simple web dashboard to monitor and control.', tag: 'center', status: 'not_started' },
+      { step: 8, title: 'Final Testing', description: 'Test entire system and fix bugs.', tag: 'center', status: 'not_started' }
+    ];
   } else {
     components = [
       { name: 'Arduino Uno', description: 'Main microcontroller board', quantity: 1, estimated_cost: '₹400' },
       { name: 'Breadboard', description: 'For prototyping connections', quantity: 1, estimated_cost: '₹100' },
       { name: 'Jumper Wires', description: 'Connecting wires', quantity: 20, estimated_cost: '₹50' },
-      { name: 'LED', description: 'Light indicators', quantity: 5, estimated_cost: '₹25' }
+      { name: 'LED', description: 'Light indicators', quantity: 5, estimated_cost: '₹25' },
+      { name: 'Resistors', description: '220Ω resistors', quantity: 5, estimated_cost: '₹10' }
     ];
     steps = [
       { step: 1, title: 'Plan and Research', description: 'Research similar projects and create a detailed plan with sketches.', tag: 'home', status: 'not_started' },
