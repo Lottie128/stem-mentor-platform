@@ -24,8 +24,10 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+// Increase payload limit to 10MB for profile pictures
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Request logging
 app.use((req, res, next) => {
@@ -40,7 +42,7 @@ app.get('/health', (req, res) => {
     message: 'STEM Mentor API is running', 
     version: '2.0.0',
     timestamp: new Date().toISOString(),
-    features: ['IBR Applications', 'Step Submissions', 'STEM Certificates', 'Awards', 'Portfolios']
+    features: ['IBR Applications', 'Step Submissions', 'STEM Certificates', 'Awards', 'Portfolios', 'Profile Pictures']
   });
 });
 
@@ -92,6 +94,7 @@ const startServer = async () => {
       console.log('   • STEM Certificates');
       console.log('   • Awards & Achievements');
       console.log('   • Public Portfolios');
+      console.log('   • Profile Pictures & Bios');
       console.log('\n📚 Ready to accept requests!\n');
     });
   } catch (error) {
