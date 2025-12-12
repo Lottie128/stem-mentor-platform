@@ -28,6 +28,7 @@ const ProjectView = () => {
       
       console.log('📥 Fetched project data:', {
         status: projectRes.data.status,
+        is_public: projectRes.data.is_public,
         stepsTotal: projectRes.data.plan?.steps.length,
         stepsDone: projectRes.data.plan?.steps.filter(s => s.status === 'done').length
       });
@@ -46,6 +47,18 @@ const ProjectView = () => {
     fetchProjectData();
   }, [fetchProjectData]);
 
+  const toggleVisibility = async () => {
+    try {
+      const response = await axios.patch(`/api/student/projects/${projectId}/visibility`, {
+        is_public: !project.is_public
+      });
+      setProject(response.data.project);
+      alert(`✅ Project is now ${response.data.project.is_public ? 'public' : 'private'}`);
+    } catch (error) {
+      alert('❌ Failed to update visibility');
+    }
+  };
+
   const openSubmissionModal = (step, stepIndex) => {
     setCurrentStep({ ...step, index: stepIndex });
     const existing = submissions.find(s => s.step_number === step.step);
@@ -63,29 +76,20 @@ const ProjectView = () => {
 
   const submitStepProof = async () => {
     try {
-      console.log('📤 Submitting step proof...');
-      
-      // Submit proof
       await axios.post('/api/submissions', {
         project_id: projectId,
         step_number: currentStep.step,
         ...submissionForm
       });
       
-      // Update step status to done and get updated project
       const response = await axios.patch(`/api/student/projects/${projectId}/steps/${currentStep.index}`, {
         status: 'done'
       });
       
-      console.log('✅ Step marked as done, updated project:', response.data);
-      
-      // Update local state immediately with fresh data
       setProject(response.data);
-      
       alert('✅ Step submission saved successfully!');
       setShowSubmissionModal(false);
       
-      // Fetch other data (submissions and certificates)
       const [submissionsRes, certsRes] = await Promise.all([
         axios.get(`/api/submissions/project/${projectId}`),
         axios.get('/api/certificates/my-certificates')
@@ -102,18 +106,11 @@ const ProjectView = () => {
 
   const updateStepStatus = async (stepIndex, newStatus) => {
     try {
-      console.log(`🔄 Updating step ${stepIndex} to ${newStatus}`);
-      
       const response = await axios.patch(`/api/student/projects/${projectId}/steps/${stepIndex}`, {
         status: newStatus
       });
-      
-      console.log('✅ Step status updated, fresh project:', response.data);
-      
-      // Update local state immediately
       setProject(response.data);
     } catch (error) {
-      console.error('❌ Failed to update step status:', error);
       alert('Failed to update step status');
     }
   };
@@ -149,15 +146,22 @@ const ProjectView = () => {
   const progressPercentage = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
   const isCompleted = project.status === 'COMPLETED';
 
-  console.log('📏 Progress:', { completedSteps, totalSteps, progressPercentage, isCompleted });
-
   return (
     <div className="project-view">
       {/* Header */}
       <div className="view-header glass-card">
         <button onClick={() => navigate('/student')} className="back-btn">← Back</button>
         <div className="header-content">
-          <h1>{project.title}</h1>
+          <div className="title-row">
+            <h1>{project.title}</h1>
+            <button 
+              onClick={toggleVisibility} 
+              className={`visibility-toggle ${project.is_public ? 'public' : 'private'}`}
+              title={project.is_public ? 'Click to make private' : 'Click to make public'}
+            >
+              {project.is_public ? '🌍 Public' : '🔒 Private'}
+            </button>
+          </div>
           <div className="progress-bar-container">
             <div className="progress-info">
               <span>Progress</span>
@@ -170,7 +174,6 @@ const ProjectView = () => {
         </div>
       </div>
 
-      {/* Rest of the component stays the same... */}
       {/* Project Info */}
       <div className="project-info-card glass-card">
         <div className="info-grid">
