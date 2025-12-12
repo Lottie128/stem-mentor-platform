@@ -35,6 +35,7 @@ const certificateRoutes = require('./routes/certificates.routes');
 const portfolioRoutes = require('./routes/portfolio.routes');
 const ibrRoutes = require('./routes/ibr.routes');
 const submissionRoutes = require('./routes/submissions.routes');
+const awardsRoutes = require('./routes/awards.routes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/student', studentRoutes);
@@ -43,6 +44,7 @@ app.use('/api/certificates', certificateRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/ibr', ibrRoutes);
 app.use('/api/submissions', submissionRoutes);
+app.use('/api/awards', awardsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -59,7 +61,7 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n\u{1F680} Server started successfully!`);
+  console.log(`\n🚀 Server started successfully!`);
   console.log(`   Port: ${PORT}`);
   console.log(`   API: http://localhost:${PORT}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}\n`);
