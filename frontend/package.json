@@ -9,6 +9,7 @@
     "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+<<<<<<< HEAD
     "react-markdown": "^9.1.0",
     "react-router-dom": "^6.20.1",
     "react-scripts": "5.0.1",
@@ -16,6 +17,15 @@
     "recharts": "^2.10.3",
     "remark-gfm": "^4.0.1",
     "socket.io-client": "^4.8.1",
+=======
+    "react-router-dom": "^6.20.1",
+    "react-scripts": "5.0.1",
+    "recharts": "^2.10.3",
+    "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
+    "remark-gfm": "^4.0.0",
+    "socket.io-client": "^4.7.2",
+>>>>>>> 82caf7acecd0e367c27bd71430cbc3eb0cd759c2
     "web-vitals": "^2.1.4"
   },
   "scripts": {

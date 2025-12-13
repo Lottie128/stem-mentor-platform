@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
+import { getSocket } from '../services/socket';
 import '../styles/ChatModal.css';
 
 const ChatModal = ({ isOpen, onClose, chatType, title }) => {
@@ -10,7 +11,6 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-  const pollIntervalRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -24,22 +24,36 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
     if (isOpen) {
       loadHistory();
       
+      // Set up real-time message listener
       if (chatType === 'teacher') {
-        pollIntervalRef.current = setInterval(loadHistory, 5000);
+        const socket = getSocket();
+        if (socket) {
+          socket.on('new_teacher_message', handleNewMessage);
+        }
       }
     }
 
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+      const socket = getSocket();
+      if (socket) {
+        socket.off('new_teacher_message', handleNewMessage);
       }
     };
   }, [isOpen, chatType]);
 
+  const handleNewMessage = (data) => {
+    // Reload messages when new message arrives
+    loadHistory();
+    
+    // Play notification sound (optional)
+    const audio = new Audio('/notification.mp3');
+    audio.play().catch(e => console.log('Audio play failed:', e));
+  };
+
   const loadHistory = async () => {
     try {
       const endpoint = chatType === 'ai' ? '/api/chat/ai-history' : '/api/chat/teacher-history';
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -63,7 +77,7 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
 
     try {
       const endpoint = chatType === 'ai' ? '/api/chat/ai' : '/api/chat/teacher';
-      const response = await fetch(endpoint, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -130,45 +144,6 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
                           {children}
                         </code>
                       );
-                    },
-                    // Custom paragraph rendering to preserve formatting
-                    p({ children }) {
-                      return <p>{children}</p>;
-                    },
-                    // Better list rendering
-                    ul({ children }) {
-                      return <ul className="md-list">{children}</ul>;
-                    },
-                    ol({ children }) {
-                      return <ol className="md-list">{children}</ol>;
-                    },
-                    li({ children }) {
-                      return <li className="md-list-item">{children}</li>;
-                    },
-                    // Headings with custom styling
-                    h1({ children }) {
-                      return <h1 className="md-h1">{children}</h1>;
-                    },
-                    h2({ children }) {
-                      return <h2 className="md-h2">{children}</h2>;
-                    },
-                    h3({ children }) {
-                      return <h3 className="md-h3">{children}</h3>;
-                    },
-                    h4({ children }) {
-                      return <h4 className="md-h4">{children}</h4>;
-                    },
-                    // Strong (bold) text
-                    strong({ children }) {
-                      return <strong className="md-bold">{children}</strong>;
-                    },
-                    // Emphasis (italic) text
-                    em({ children }) {
-                      return <em className="md-italic">{children}</em>;
-                    },
-                    // Blockquote
-                    blockquote({ children }) {
-                      return <blockquote className="md-blockquote">{children}</blockquote>;
                     }
                   }}
                 >

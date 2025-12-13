@@ -85,7 +85,7 @@ router.get('/teacher-history', authenticate, async (req, res) => {
   }
 });
 
-// Send message to teacher
+// Send message to teacher (with real-time notification)
 router.post('/teacher', authenticate, async (req, res) => {
   try {
     const { message } = req.body;
@@ -95,6 +95,15 @@ router.post('/teacher', authenticate, async (req, res) => {
        VALUES (:studentId, 'teacher', 'student', :message)`,
       { replacements: { studentId: req.user.id, message } }
     );
+    
+    // Emit real-time notification to admin
+    const io = req.app.get('io');
+    io.to('admin_room').emit('new_student_message', {
+      student_id: req.user.id,
+      student_name: req.user.full_name,
+      message: message,
+      timestamp: new Date()
+    });
     
     res.json({ success: true });
   } catch (error) {
@@ -145,7 +154,7 @@ router.get('/admin/messages', authenticate, async (req, res) => {
   }
 });
 
-// Admin: Reply to student
+// Admin: Reply to student (with real-time notification)
 router.post('/admin/reply/:studentId', authenticate, async (req, res) => {
   try {
     if (req.user.role !== 'ADMIN') {
@@ -161,10 +170,45 @@ router.post('/admin/reply/:studentId', authenticate, async (req, res) => {
       { replacements: { studentId, message } }
     );
     
+    // Emit real-time notification to student
+    const io = req.app.get('io');
+    io.to(`user_${studentId}`).emit('new_teacher_message', {
+      message: message,
+      timestamp: new Date()
+    });
+    
     res.json({ success: true });
   } catch (error) {
     console.error('Error sending admin reply:', error);
     res.status(500).json({ error: 'Failed to send reply' });
+  }
+});
+
+// Get unread message count for admin
+router.get('/admin/unread-count', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const [result] = await sequelize.query(
+      `SELECT COUNT(DISTINCT student_id) as unread_students
+       FROM chat_messages
+       WHERE chat_type = 'teacher' 
+       AND role = 'student'
+       AND created_at > COALESCE(
+         (SELECT MAX(created_at) 
+          FROM chat_messages cm2 
+          WHERE cm2.student_id = chat_messages.student_id 
+          AND cm2.role = 'admin'),
+         '1970-01-01'
+       )`
+    );
+    
+    res.json({ count: parseInt(result[0].unread_students) || 0 });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({ error: 'Failed to fetch unread count' });
   }
 });
 
