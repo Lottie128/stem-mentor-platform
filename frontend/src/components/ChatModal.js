@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import remarkGfm from 'remark-gfm';
 import '../styles/ChatModal.css';
 
 const ChatModal = ({ isOpen, onClose, chatType, title }) => {
@@ -111,6 +112,7 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
               </div>
               <div className="message-content">
                 <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     code({ node, inline, className, children, ...props }) {
                       const match = /language-(\w+)/.exec(className || '');
@@ -128,6 +130,45 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
                           {children}
                         </code>
                       );
+                    },
+                    // Custom paragraph rendering to preserve formatting
+                    p({ children }) {
+                      return <p>{children}</p>;
+                    },
+                    // Better list rendering
+                    ul({ children }) {
+                      return <ul className="md-list">{children}</ul>;
+                    },
+                    ol({ children }) {
+                      return <ol className="md-list">{children}</ol>;
+                    },
+                    li({ children }) {
+                      return <li className="md-list-item">{children}</li>;
+                    },
+                    // Headings with custom styling
+                    h1({ children }) {
+                      return <h1 className="md-h1">{children}</h1>;
+                    },
+                    h2({ children }) {
+                      return <h2 className="md-h2">{children}</h2>;
+                    },
+                    h3({ children }) {
+                      return <h3 className="md-h3">{children}</h3>;
+                    },
+                    h4({ children }) {
+                      return <h4 className="md-h4">{children}</h4>;
+                    },
+                    // Strong (bold) text
+                    strong({ children }) {
+                      return <strong className="md-bold">{children}</strong>;
+                    },
+                    // Emphasis (italic) text
+                    em({ children }) {
+                      return <em className="md-italic">{children}</em>;
+                    },
+                    // Blockquote
+                    blockquote({ children }) {
+                      return <blockquote className="md-blockquote">{children}</blockquote>;
                     }
                   }}
                 >
