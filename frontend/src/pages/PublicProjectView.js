@@ -46,6 +46,23 @@ const PublicProjectView = () => {
     return icons[status] || '⚪';
   };
 
+  const getYouTubeEmbedUrl = (url) => {
+    if (!url) return null;
+    
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+      /youtube\.com\/embed\/([^&\s]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return `https://www.youtube.com/embed/${match[1]}`;
+      }
+    }
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="public-project-loading">
@@ -158,6 +175,7 @@ const PublicProjectView = () => {
               {project.plan.steps.map((step, index) => {
                 const submission = getSubmissionForStep(step.step);
                 const isCompleted = step.status === 'done';
+                const embedUrl = submission?.video_link ? getYouTubeEmbedUrl(submission.video_link) : null;
                 
                 return (
                   <div key={index} className={`timeline-item ${isCompleted ? 'completed' : ''}`}>
@@ -181,24 +199,33 @@ const PublicProjectView = () => {
                         <div className="step-submission">
                           <h4>📋 What I Did:</h4>
                           
-                          {submission.video_link && (
+                          {/* YouTube Video Embed */}
+                          {embedUrl && (
                             <div className="submission-video">
                               <h5>🎥 Video Documentation</h5>
-                              <a href={submission.video_link} target="_blank" rel="noopener noreferrer" className="video-link">
-                                Watch Video →
-                              </a>
+                              <div className="video-container">
+                                <iframe
+                                  src={embedUrl}
+                                  title={`Step ${step.step} Video`}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                ></iframe>
+                              </div>
                             </div>
                           )}
                           
+                          {/* Images Link */}
                           {submission.images_link && (
                             <div className="submission-images">
                               <h5>🖼️ Photo Gallery</h5>
                               <a href={submission.images_link} target="_blank" rel="noopener noreferrer" className="images-link">
-                                View Photos →
+                                📸 View All Photos →
                               </a>
                             </div>
                           )}
                           
+                          {/* Notes */}
                           {submission.notes && (
                             <div className="submission-notes">
                               <h5>📝 My Notes & Learnings:</h5>
