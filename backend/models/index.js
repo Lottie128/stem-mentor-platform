@@ -5,6 +5,7 @@ const ProjectPlan = require('./ProjectPlan');
 const Certificate = require('./Certificate');
 const Award = require('./Award');
 const Submission = require('./Submission');
+const IBRApplication = require('./IBRApplication');
 
 // Define all associations here to avoid duplicates
 Project.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
@@ -29,6 +30,9 @@ Submission.belongsTo(Project, { as: 'project', foreignKey: 'project_id' });
 User.hasMany(Submission, { as: 'submissions', foreignKey: 'student_id' });
 Project.hasMany(Submission, { as: 'submissions', foreignKey: 'project_id' });
 
+IBRApplication.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
+User.hasMany(IBRApplication, { as: 'ibrApplications', foreignKey: 'student_id' });
+
 module.exports = {
   sequelize,
   User,
@@ -36,5 +40,6 @@ module.exports = {
   ProjectPlan,
   Certificate,
   Award,
-  Submission
+  Submission,
+  IBRApplication
 };
