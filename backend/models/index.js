@@ -30,8 +30,7 @@ Submission.belongsTo(Project, { as: 'project', foreignKey: 'project_id' });
 User.hasMany(Submission, { as: 'submissions', foreignKey: 'student_id' });
 Project.hasMany(Submission, { as: 'submissions', foreignKey: 'project_id' });
 
-IBRApplication.belongsTo(User, { as: 'student', foreignKey: 'student_id' });
-User.hasMany(IBRApplication, { as: 'ibrApplications', foreignKey: 'student_id' });
+// Note: IBRApplication associations are defined in IBRApplication.js model file
 
 module.exports = {
   sequelize,
