@@ -30,6 +30,7 @@ app.use('/api/portfolio', require('./routes/portfolio.routes'));
 app.use('/api/certificates', require('./routes/certificates.routes'));
 app.use('/api/chat', require('./routes/chat.routes'));
 app.use('/api/password', require('./routes/password.routes'));
+app.use('/api/awards', require('./routes/awards.routes'));
 
 // Socket.io connection
 io.on('connection', (socket) => {
