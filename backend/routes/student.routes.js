@@ -1,11 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth.middleware');
-const Project = require('../models/Project');
-const ProjectPlan = require('../models/ProjectPlan');
-const User = require('../models/User');
-const Certificate = require('../models/Certificate');
-const Award = require('../models/Award');
+const { Project, ProjectPlan, User, Certificate, Award } = require('../models');
 const crypto = require('crypto');
 
 // Protect all student routes
