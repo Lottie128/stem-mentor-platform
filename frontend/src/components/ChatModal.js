@@ -24,30 +24,23 @@ const ChatModal = ({ isOpen, onClose, chatType, title }) => {
     if (isOpen) {
       loadHistory();
       
-      // Set up real-time message listener
+      // Set up real-time message listener for teacher chat
       if (chatType === 'teacher') {
         const socket = getSocket();
         if (socket) {
           socket.on('new_teacher_message', handleNewMessage);
+          return () => {
+            socket.off('new_teacher_message', handleNewMessage);
+          };
         }
       }
     }
-
-    return () => {
-      const socket = getSocket();
-      if (socket) {
-        socket.off('new_teacher_message', handleNewMessage);
-      }
-    };
   }, [isOpen, chatType]);
 
   const handleNewMessage = (data) => {
+    console.log('New teacher message received:', data);
     // Reload messages when new message arrives
     loadHistory();
-    
-    // Play notification sound (optional)
-    const audio = new Audio('/notification.mp3');
-    audio.play().catch(e => console.log('Audio play failed:', e));
   };
 
   const loadHistory = async () => {

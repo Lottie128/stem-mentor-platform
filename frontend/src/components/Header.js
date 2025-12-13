@@ -7,9 +7,10 @@ import '../styles/Header.css';
 const Header = ({ user, onLogout }) => {
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
-    if (user?.role === 'ADMIN') {
+    if (isAdmin) {
       fetchUnreadCount();
       
       // Listen for new messages
@@ -25,9 +26,15 @@ const Header = ({ user, onLogout }) => {
 
       // Poll every 30 seconds as backup
       const interval = setInterval(fetchUnreadCount, 30000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        const socket = getSocket();
+        if (socket) {
+          socket.off('new_student_message');
+        }
+      };
     }
-  }, [user]);
+  }, [isAdmin]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -53,7 +60,7 @@ const Header = ({ user, onLogout }) => {
   return (
     <header className="app-header glass-card">
       <div className="header-container">
-        <Link to={user?.role === 'ADMIN' ? '/admin' : '/student'} className="logo">
+        <Link to={isAdmin ? '/admin' : '/student'} className="logo">
           <div className="header-logo">
             <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="45" height="45">
               <defs>
@@ -89,7 +96,7 @@ const Header = ({ user, onLogout }) => {
         </Link>
 
         <nav className="nav-links">
-          {user?.role === 'ADMIN' ? (
+          {isAdmin ? (
             <>
               <Link to="/admin" className="nav-link">🏠 Dashboard</Link>
               <Link to="/admin/students" className="nav-link">👥 Students</Link>
@@ -108,7 +115,7 @@ const Header = ({ user, onLogout }) => {
               <Link to="/student/awards" className="nav-link">🏆 Awards</Link>
               <Link to="/student/profile" className="nav-link">⚙️ Settings</Link>
               <Link to={`/portfolio/${getPortfolioUsername()}`} className="nav-link public-link" target="_blank">
-                🌐 View Public Portfolio
+                🌐 Public Portfolio
               </Link>
             </>
           )}
