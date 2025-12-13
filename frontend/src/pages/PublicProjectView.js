@@ -63,6 +63,36 @@ const PublicProjectView = () => {
     return null;
   };
 
+  // Convert Google Drive link to embed/preview URL
+  const getGoogleDriveEmbedUrl = (url) => {
+    if (!url) return null;
+    
+    // Extract file/folder ID from various Google Drive URL formats
+    const patterns = [
+      /\/file\/d\/([^\/]+)/,
+      /\/folders\/([^\?]+)/,
+      /id=([^&]+)/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        const id = match[1];
+        // For folders, we'll return the original URL since we can't embed folders
+        if (url.includes('/folders/')) {
+          return url;
+        }
+        // For files, return preview URL
+        return `https://drive.google.com/file/d/${id}/preview`;
+      }
+    }
+    return url;
+  };
+
+  const isGoogleDriveFolder = (url) => {
+    return url && url.includes('/folders/');
+  };
+
   if (loading) {
     return (
       <div className="public-project-loading">
@@ -176,6 +206,8 @@ const PublicProjectView = () => {
                 const submission = getSubmissionForStep(step.step);
                 const isCompleted = step.status === 'done';
                 const embedUrl = submission?.video_link ? getYouTubeEmbedUrl(submission.video_link) : null;
+                const driveUrl = submission?.images_link ? getGoogleDriveEmbedUrl(submission.images_link) : null;
+                const isFolder = isGoogleDriveFolder(submission?.images_link);
                 
                 return (
                   <div key={index} className={`timeline-item ${isCompleted ? 'completed' : ''}`}>
@@ -194,15 +226,16 @@ const PublicProjectView = () => {
                       
                       <p className="step-description">{step.description}</p>
                       
-                      {/* Show submission if completed */}
-                      {isCompleted && submission && (
-                        <div className="step-submission">
-                          <h4>📋 What I Did:</h4>
-                          
-                          {/* YouTube Video Embed */}
-                          {embedUrl && (
-                            <div className="submission-video">
-                              <h5>🎥 Video Documentation</h5>
+                      {/* Media Section - Always show, with placeholders */}
+                      <div className="step-media">
+                        <div className="media-grid">
+                          {/* Video */}
+                          <div className="media-item">
+                            <div className="media-label">
+                              <span className="media-icon">🎥</span>
+                              <span>Video Documentation</span>
+                            </div>
+                            {embedUrl ? (
                               <div className="video-container">
                                 <iframe
                                   src={embedUrl}
@@ -212,32 +245,61 @@ const PublicProjectView = () => {
                                   allowFullScreen
                                 ></iframe>
                               </div>
+                            ) : (
+                              <div className="media-placeholder video-placeholder">
+                                <div className="placeholder-icon">🎥</div>
+                                <p>{isCompleted ? 'No video uploaded' : 'Video coming soon...'}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Images */}
+                          <div className="media-item">
+                            <div className="media-label">
+                              <span className="media-icon">🖼️</span>
+                              <span>Photo Gallery</span>
                             </div>
-                          )}
-                          
-                          {/* Images Link */}
-                          {submission.images_link && (
-                            <div className="submission-images">
-                              <h5>🖼️ Photo Gallery</h5>
-                              <a href={submission.images_link} target="_blank" rel="noopener noreferrer" className="images-link">
-                                📸 View All Photos →
-                              </a>
-                            </div>
-                          )}
-                          
-                          {/* Notes */}
-                          {submission.notes && (
-                            <div className="submission-notes">
-                              <h5>📝 My Notes & Learnings:</h5>
-                              <p>{submission.notes}</p>
-                            </div>
-                          )}
+                            {driveUrl && !isFolder ? (
+                              <div className="images-container">
+                                <iframe
+                                  src={driveUrl}
+                                  title={`Step ${step.step} Images`}
+                                  frameBorder="0"
+                                  allow="autoplay"
+                                ></iframe>
+                              </div>
+                            ) : driveUrl && isFolder ? (
+                              <div className="folder-link-container">
+                                <a href={driveUrl} target="_blank" rel="noopener noreferrer" className="folder-link">
+                                  📂 Open Photo Folder ({submission.images_link.match(/\/folders\//) ? 'Multiple Photos' : 'View Gallery'})
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="media-placeholder image-placeholder">
+                                <div className="placeholder-icon">🖼️</div>
+                                <p>{isCompleted ? 'No photos uploaded' : 'Photos coming soon...'}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Notes - Always show if exists */}
+                      {submission?.notes && (
+                        <div className="step-notes">
+                          <div className="notes-header">
+                            <span className="notes-icon">📝</span>
+                            <span>My Notes & Learnings</span>
+                          </div>
+                          <p className="notes-content">{submission.notes}</p>
                         </div>
                       )}
                       
+                      {/* Status indicator for incomplete steps */}
                       {!isCompleted && (
-                        <div className="step-pending">
-                          <p>⏳ This step is {step.status === 'in_progress' ? 'currently in progress' : 'not started yet'}...</p>
+                        <div className="step-status-indicator">
+                          <span className="status-icon">{step.status === 'in_progress' ? '🔄' : '⏳'}</span>
+                          <span>{step.status === 'in_progress' ? 'Work in Progress...' : 'Not Started Yet'}</span>
                         </div>
                       )}
                     </div>
