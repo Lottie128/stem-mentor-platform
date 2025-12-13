@@ -74,6 +74,10 @@ const AdminDashboard = () => {
             <span className="btn-icon">👥</span>
             Manage Students
           </Link>
+          <Link to="/admin/ibr" className="action-btn ibr-btn">
+            <span className="btn-icon">🇮🇳</span>
+            IBR Applications
+          </Link>
         </div>
       </div>
 
