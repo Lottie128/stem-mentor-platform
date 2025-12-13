@@ -8,6 +8,7 @@ import NotActive from './pages/NotActive';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentManagement from './pages/admin/StudentManagement';
 import ProjectReview from './pages/admin/ProjectReview';
+import IBRManagement from './pages/admin/IBRManagement';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ProjectSubmit from './pages/student/ProjectSubmit';
 import ProjectView from './pages/student/ProjectView';
@@ -17,6 +18,7 @@ import IBRApplication from './pages/student/IBRApplication';
 import ProfileEdit from './pages/student/ProfileEdit';
 import CertificateView from './pages/CertificateView';
 import PublicPortfolio from './pages/PublicPortfolio';
+import PublicProjectView from './pages/PublicProjectView';
 import './styles/App.css';
 
 function App() {
@@ -50,7 +52,12 @@ function App() {
   }
 
   return (
-    <Router>
+    <Router
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <div className="app">
         <ParticlesBackground />
         {user && <Header user={user} onLogout={handleLogout} />}
@@ -65,6 +72,7 @@ function App() {
 
             {/* Public routes */}
             <Route path="/portfolio/:username" element={<PublicPortfolio />} />
+            <Route path="/portfolio/:username/project/:projectId" element={<PublicProjectView />} />
             <Route path="/certificate/:certificateId" element={<CertificateView />} />
 
             {/* Admin routes */}
@@ -79,6 +87,10 @@ function App() {
             <Route 
               path="/admin/projects/:projectId" 
               element={user?.role === 'ADMIN' ? <ProjectReview /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/admin/ibr" 
+              element={user?.role === 'ADMIN' ? <IBRManagement /> : <Navigate to="/login" />} 
             />
 
             {/* Student routes */}
