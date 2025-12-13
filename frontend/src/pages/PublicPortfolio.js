@@ -24,6 +24,53 @@ const PublicPortfolio = () => {
     }
   };
 
+  // Helper to parse skills safely
+  const getSkills = (skills) => {
+    if (!skills) return [];
+    if (Array.isArray(skills)) return skills;
+    if (typeof skills === 'string') {
+      try {
+        const parsed = JSON.parse(skills);
+        return Array.isArray(parsed) ? parsed : skills.split(',').map(s => s.trim());
+      } catch {
+        return skills.split(',').map(s => s.trim());
+      }
+    }
+    return [];
+  };
+
+  // Helper to parse social links safely
+  const getSocialLinks = (links) => {
+    if (!links) return [];
+    if (Array.isArray(links)) return links;
+    if (typeof links === 'string') {
+      try {
+        const parsed = JSON.parse(links);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    if (typeof links === 'object') {
+      return Object.entries(links)
+        .filter(([key, value]) => value)
+        .map(([platform, username]) => ({
+          platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+          url: getSocialUrl(platform, username)
+        }));
+    }
+    return [];
+  };
+
+  const getSocialUrl = (platform, username) => {
+    const urls = {
+      github: `https://github.com/${username}`,
+      linkedin: `https://linkedin.com/in/${username}`,
+      twitter: `https://twitter.com/${username}`
+    };
+    return urls[platform.toLowerCase()] || username;
+  };
+
   if (loading) {
     return (
       <div className="portfolio-loading">
@@ -43,6 +90,8 @@ const PublicPortfolio = () => {
   }
 
   const { student, projects, certificates, awards } = portfolio;
+  const skills = getSkills(student.skills);
+  const socialLinks = getSocialLinks(student.social_links);
 
   return (
     <div className="public-portfolio">
@@ -61,10 +110,10 @@ const PublicPortfolio = () => {
               <p className="school">🏫 {student.school || 'STEM Enthusiast'}</p>
               <p className="location">🌍 {student.country || 'Location not specified'}</p>
               {student.bio && <p className="bio">{student.bio}</p>}
-              {student.skills && (
+              {skills.length > 0 && (
                 <div className="skills">
-                  {student.skills.split(',').map((skill, index) => (
-                    <span key={index} className="skill-tag">{skill.trim()}</span>
+                  {skills.map((skill, index) => (
+                    <span key={index} className="skill-tag">{skill}</span>
                   ))}
                 </div>
               )}
@@ -174,9 +223,9 @@ const PublicPortfolio = () => {
       {/* Footer */}
       <div className="portfolio-footer">
         <p>💡 Built with passion for STEM education</p>
-        {student.social_links && (
+        {socialLinks.length > 0 && (
           <div className="social-links">
-            {JSON.parse(student.social_links).map((link, index) => (
+            {socialLinks.map((link, index) => (
               <a key={index} href={link.url} target="_blank" rel="noopener noreferrer" className="social-link">
                 {link.platform}
               </a>
