@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
-const { authenticate } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth.middleware');
 const crypto = require('crypto');
 
 // Student: Reset own password
