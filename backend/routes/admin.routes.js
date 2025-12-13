@@ -1,11 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 const { authenticate, requireRole } = require('../middleware/auth.middleware');
-const User = require('../models/User');
-const Project = require('../models/Project');
-const ProjectPlan = require('../models/ProjectPlan');
-const Certificate = require('../models/Certificate');
-const IBRApplication = require('../models/IBRApplication');
+const { User, Project, ProjectPlan, Certificate, IBRApplication } = require('../models');
 const { Op } = require('sequelize');
 
 // Protect all admin routes
@@ -45,6 +42,53 @@ router.get('/students', async (req, res) => {
   } catch (error) {
     console.error('Get students error:', error);
     res.status(500).json({ message: 'Failed to fetch students' });
+  }
+});
+
+// Create new student
+router.post('/students', async (req, res) => {
+  try {
+    const { full_name, email, age, school, country, expires_at } = req.body;
+
+    // Validate required fields
+    if (!full_name || !email || !expires_at) {
+      return res.status(400).json({ message: 'Name, email, and expiry date are required' });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Generate default password (first 8 chars of email)
+    const defaultPassword = email.substring(0, 8);
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    // Create student
+    const student = await User.create({
+      full_name,
+      email,
+      password_hash: hashedPassword,
+      role: 'STUDENT',
+      is_active: true,
+      age: age || null,
+      school: school || null,
+      country: country || null,
+      expires_at: new Date(expires_at)
+    });
+
+    // Return student without password
+    const { password_hash, ...studentData } = student.toJSON();
+    
+    res.status(201).json({
+      message: 'Student created successfully',
+      student: studentData,
+      defaultPassword: defaultPassword
+    });
+  } catch (error) {
+    console.error('Create student error:', error);
+    res.status(500).json({ message: 'Failed to create student', error: error.message });
   }
 });
 
