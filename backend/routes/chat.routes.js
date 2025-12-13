@@ -41,8 +41,8 @@ router.post('/ai', authenticate, async (req, res) => {
       { replacements: { studentId: req.user.id, message } }
     );
     
-    // Get AI response
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Get AI response using gemini-1.5-flash (updated model)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     const prompt = `You are a friendly STEM education mentor assistant. Help students with their science, technology, engineering, and math questions. Be encouraging and educational.\n\nStudent question: ${message}`;
     
     const result = await model.generateContent(prompt);
