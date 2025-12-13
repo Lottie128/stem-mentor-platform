@@ -41,27 +41,8 @@ router.post('/ai', authenticate, async (req, res) => {
       { replacements: { studentId: req.user.id, message } }
     );
     
-    // Try multiple model names in case one fails
-    let model;
-    const modelNames = ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-pro'];
-    
-    for (const modelName of modelNames) {
-      try {
-        model = genAI.getGenerativeModel({ model: modelName });
-        const testResult = await model.generateContent('test');
-        // If we get here, the model works
-        console.log(`✅ Using Gemini model: ${modelName}`);
-        break;
-      } catch (err) {
-        console.log(`❌ Model ${modelName} not available, trying next...`);
-        continue;
-      }
-    }
-    
-    if (!model) {
-      throw new Error('No available Gemini models found');
-    }
-    
+    // Use Gemini 2.5 Flash - stable model with best price-performance
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const prompt = `You are a friendly STEM education mentor assistant. Help students with their science, technology, engineering, and math questions. Be encouraging and educational.\n\nStudent question: ${message}`;
     
     const result = await model.generateContent(prompt);
