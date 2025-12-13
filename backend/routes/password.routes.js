@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const db = require('../config/database');
+const { sequelize } = require('../config/database');
 const { authenticate } = require('../middleware/auth.middleware');
 const crypto = require('crypto');
 
@@ -19,9 +19,9 @@ router.post('/reset', authenticate, async (req, res) => {
     }
     
     // Get current user
-    const { rows } = await db.query(
-      'SELECT * FROM users WHERE id = $1',
-      [req.user.id]
+    const [rows] = await sequelize.query(
+      'SELECT * FROM users WHERE id = :id',
+      { replacements: { id: req.user.id } }
     );
     
     if (rows.length === 0) {
@@ -40,9 +40,9 @@ router.post('/reset', authenticate, async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
     // Update password
-    await db.query(
-      'UPDATE users SET password_hash = $1 WHERE id = $2',
-      [hashedPassword, req.user.id]
+    await sequelize.query(
+      'UPDATE users SET password_hash = :passwordHash WHERE id = :id',
+      { replacements: { passwordHash: hashedPassword, id: req.user.id } }
     );
     
     res.json({ success: true, message: 'Password updated successfully' });
@@ -68,9 +68,9 @@ router.post('/admin/generate/:studentId', authenticate, async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     
     // Update student password
-    const { rows } = await db.query(
-      'UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING email, full_name',
-      [hashedPassword, studentId]
+    const [rows] = await sequelize.query(
+      'UPDATE users SET password_hash = :passwordHash WHERE id = :id RETURNING email, full_name',
+      { replacements: { passwordHash: hashedPassword, id: studentId } }
     );
     
     if (rows.length === 0) {
