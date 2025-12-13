@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { initializeSocket, disconnectSocket } from './services/socket';
 import Loader from './components/Loader';
 import Header from './components/Header';
 import ParticlesBackground from './components/ParticlesBackground';
@@ -28,7 +29,12 @@ function App() {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      const userData = JSON.parse(storedUser);
+      setUser(userData);
+      
+      // Initialize Socket.io connection
+      const isAdmin = userData.role === 'ADMIN';
+      initializeSocket(userData.id, isAdmin);
     }
     
     setTimeout(() => {
@@ -39,12 +45,17 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Initialize Socket.io connection
+    const isAdmin = userData.role === 'ADMIN';
+    initializeSocket(userData.id, isAdmin);
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    disconnectSocket();
   };
 
   if (loading) {
