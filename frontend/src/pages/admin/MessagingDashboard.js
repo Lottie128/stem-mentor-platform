@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getSocket } from '../../services/socket';
 import '../../styles/MessagingDashboard.css';
 
 const MessagingDashboard = () => {
@@ -13,14 +14,39 @@ const MessagingDashboard = () => {
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 10000); // Refresh every 10s
-    return () => clearInterval(interval);
+
+    // Set up Socket.io listener for new messages
+    const socket = getSocket();
+    if (socket) {
+      socket.on('new_student_message', (data) => {
+        console.log('New student message received:', data);
+        fetchMessages();
+        
+        // Play notification sound
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(e => console.log('Audio play failed'));
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('new_student_message');
+      }
+    };
   }, []);
 
   const fetchMessages = async () => {
     try {
       const { data } = await axios.get('/api/chat/admin/messages');
       setConversations(data);
+      
+      // Update selected student if viewing conversation
+      if (selectedStudent) {
+        const updated = data.find(c => c.student_id === selectedStudent.student_id);
+        if (updated) {
+          setSelectedStudent(updated);
+        }
+      }
     } catch (error) {
       console.error('Failed to fetch messages:', error);
     } finally {
@@ -39,7 +65,6 @@ const MessagingDashboard = () => {
       
       setReplyMessage('');
       fetchMessages();
-      alert('✅ Reply sent!');
     } catch (error) {
       alert('❌ Failed to send reply');
     } finally {
@@ -48,7 +73,12 @@ const MessagingDashboard = () => {
   };
 
   const getUnreadCount = (conversation) => {
-    return conversation.messages.filter(m => m.role === 'student').length;
+    const lastAdminMessage = conversation.messages.filter(m => m.role === 'admin').pop();
+    const lastAdminTime = lastAdminMessage ? new Date(lastAdminMessage.created_at) : new Date(0);
+    
+    return conversation.messages.filter(m => 
+      m.role === 'student' && new Date(m.created_at) > lastAdminTime
+    ).length;
   };
 
   if (loading) {
@@ -75,30 +105,33 @@ const MessagingDashboard = () => {
             </div>
           ) : (
             <div className="conversation-items">
-              {conversations.map(conv => (
-                <div
-                  key={conv.student_id}
-                  className={`conversation-item ${selectedStudent?.student_id === conv.student_id ? 'active' : ''}`}
-                  onClick={() => setSelectedStudent(conv)}
-                >
-                  <div className="conv-avatar">
-                    {conv.profile_picture ? (
-                      <img src={conv.profile_picture} alt={conv.full_name} />
-                    ) : (
-                      <div className="avatar-placeholder">{conv.full_name[0]}</div>
+              {conversations.map(conv => {
+                const unread = getUnreadCount(conv);
+                return (
+                  <div
+                    key={conv.student_id}
+                    className={`conversation-item ${selectedStudent?.student_id === conv.student_id ? 'active' : ''} ${unread > 0 ? 'has-unread' : ''}`}
+                    onClick={() => setSelectedStudent(conv)}
+                  >
+                    <div className="conv-avatar">
+                      {conv.profile_picture ? (
+                        <img src={conv.profile_picture} alt={conv.full_name} />
+                      ) : (
+                        <div className="avatar-placeholder">{conv.full_name[0]}</div>
+                      )}
+                    </div>
+                    <div className="conv-info">
+                      <div className="conv-name">{conv.full_name}</div>
+                      <div className="conv-preview">
+                        {conv.messages[conv.messages.length - 1]?.content.substring(0, 50)}...
+                      </div>
+                    </div>
+                    {unread > 0 && (
+                      <div className="unread-badge">{unread}</div>
                     )}
                   </div>
-                  <div className="conv-info">
-                    <div className="conv-name">{conv.full_name}</div>
-                    <div className="conv-preview">
-                      {conv.messages[conv.messages.length - 1]?.content.substring(0, 50)}...
-                    </div>
-                  </div>
-                  {getUnreadCount(conv) > 0 && (
-                    <div className="unread-badge">{getUnreadCount(conv)}</div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
