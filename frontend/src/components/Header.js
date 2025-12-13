@@ -1,9 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { getSocket } from '../services/socket';
 import '../styles/Header.css';
 
 const Header = ({ user, onLogout }) => {
   const navigate = useNavigate();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetchUnreadCount();
+      
+      // Listen for new messages
+      const socket = getSocket();
+      if (socket) {
+        socket.on('new_student_message', () => {
+          fetchUnreadCount();
+          // Play notification sound
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(e => console.log('Audio play failed'));
+        });
+      }
+
+      // Poll every 30 seconds as backup
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await axios.get('/api/chat/admin/unread-count');
+      setUnreadCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
 
   const handleLogout = () => {
     onLogout();
@@ -29,7 +62,6 @@ const Header = ({ user, onLogout }) => {
                   <stop offset="100%" stopColor="#ec4899" />
                 </linearGradient>
               </defs>
-              {/* S Letter */}
               <path 
                 className="header-logo-path header-logo-s"
                 d="M 35 25 Q 20 25 20 35 Q 20 45 35 45 L 55 45 Q 70 45 70 55 Q 70 65 55 65 L 25 65"
@@ -39,8 +71,6 @@ const Header = ({ user, onLogout }) => {
                 strokeLinejoin="round"
                 fill="none"
               />
-              
-              {/* T Letter */}
               <path 
                 className="header-logo-path header-logo-t"
                 d="M 50 30 L 80 30 M 65 30 L 65 70"
@@ -50,8 +80,6 @@ const Header = ({ user, onLogout }) => {
                 strokeLinejoin="round"
                 fill="none"
               />
-              
-              {/* Orbiting dots */}
               <circle className="header-orbit-dot header-dot-1" cx="50" cy="50" r="2.5" fill="#a78bfa" />
               <circle className="header-orbit-dot header-dot-2" cx="50" cy="50" r="2.5" fill="#ec4899" />
               <circle className="header-orbit-dot header-dot-3" cx="50" cy="50" r="2.5" fill="#f59e0b" />
@@ -66,7 +94,12 @@ const Header = ({ user, onLogout }) => {
               <Link to="/admin" className="nav-link">🏠 Dashboard</Link>
               <Link to="/admin/students" className="nav-link">👥 Students</Link>
               <Link to="/admin/ibr" className="nav-link">🇮🇳 IBR</Link>
-              <Link to="/admin/messages" className="nav-link">💬 Messages</Link>
+              <Link to="/admin/messages" className="nav-link message-link">
+                💬 Messages
+                {unreadCount > 0 && (
+                  <span className="message-badge">{unreadCount}</span>
+                )}
+              </Link>
             </>
           ) : (
             <>
