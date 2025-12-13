@@ -9,12 +9,23 @@ const StudentDashboard = () => {
   const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [showTeacherChat, setShowTeacherChat] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [featureRequest, setFeatureRequest] = useState('');
   const [submittingFeature, setSubmittingFeature] = useState(false);
+  
+  // Chat states
+  const [aiMessages, setAiMessages] = useState([]);
+  const [teacherMessages, setTeacherMessages] = useState([]);
+  const [aiInput, setAiInput] = useState('');
+  const [teacherInput, setTeacherInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
+    fetchChatHistory();
   }, []);
 
   const fetchDashboardData = async () => {
@@ -32,6 +43,19 @@ const StudentDashboard = () => {
       console.error('Failed to fetch dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchChatHistory = async () => {
+    try {
+      const [aiRes, teacherRes] = await Promise.all([
+        axios.get('/api/chat/ai-history'),
+        axios.get('/api/chat/teacher-history')
+      ]);
+      setAiMessages(aiRes.data);
+      setTeacherMessages(teacherRes.data);
+    } catch (error) {
+      console.error('Failed to fetch chat history:', error);
     }
   };
 
@@ -59,6 +83,42 @@ const StudentDashboard = () => {
       alert('❌ Failed to submit feature request');
     } finally {
       setSubmittingFeature(false);
+    }
+  };
+
+  const sendAIMessage = async () => {
+    if (!aiInput.trim()) return;
+
+    const userMessage = { role: 'user', content: aiInput, timestamp: new Date() };
+    setAiMessages(prev => [...prev, userMessage]);
+    setAiInput('');
+    setAiLoading(true);
+
+    try {
+      const response = await axios.post('/api/chat/ai', { message: aiInput });
+      const aiMessage = { role: 'assistant', content: response.data.reply, timestamp: new Date() };
+      setAiMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      alert('❌ Failed to get AI response');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const sendTeacherMessage = async () => {
+    if (!teacherInput.trim()) return;
+
+    const userMessage = { role: 'student', content: teacherInput, timestamp: new Date() };
+    setTeacherMessages(prev => [...prev, userMessage]);
+    setTeacherInput('');
+    setSendingMessage(true);
+
+    try {
+      await axios.post('/api/chat/teacher', { message: teacherInput });
+    } catch (error) {
+      alert('❌ Failed to send message');
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -90,10 +150,14 @@ const StudentDashboard = () => {
             <span className="btn-icon">➕</span>
             Submit New Project
           </Link>
-          <Link to="/student/portfolio" className="secondary-btn">
-            <span className="btn-icon">📂</span>
-            My Portfolio
-          </Link>
+          <button onClick={() => setShowAIChat(true)} className="ai-btn">
+            <span className="btn-icon">🤖</span>
+            Talk to AI
+          </button>
+          <button onClick={() => setShowTeacherChat(true)} className="teacher-btn">
+            <span className="btn-icon">👩‍🏫</span>
+            Message Teacher
+          </button>
         </div>
       </div>
 
@@ -251,6 +315,85 @@ const StudentDashboard = () => {
                 className="submit-btn"
               >
                 {submittingFeature ? '⏳ Submitting...' : '✅ Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Chat Modal */}
+      {showAIChat && (
+        <div className="modal-overlay" onClick={() => setShowAIChat(false)}>
+          <div className="chat-modal glass-card" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-header">
+              <h3>🤖 AI Assistant</h3>
+              <button onClick={() => setShowAIChat(false)} className="close-btn">×</button>
+            </div>
+            <div className="chat-messages">
+              {aiMessages.length === 0 ? (
+                <div className="chat-empty">
+                  <p>👋 Hi! I'm your AI assistant. Ask me anything about STEM, projects, or science!</p>
+                </div>
+              ) : (
+                aiMessages.map((msg, idx) => (
+                  <div key={idx} className={`chat-message ${msg.role}`}>
+                    <div className="message-content">{msg.content}</div>
+                    <div className="message-time">{new Date(msg.timestamp).toLocaleTimeString()}</div>
+                  </div>
+                ))
+              )}
+              {aiLoading && <div className="chat-typing">🤖 AI is typing...</div>}
+            </div>
+            <div className="chat-input">
+              <input
+                type="text"
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendAIMessage()}
+                placeholder="Ask me anything..."
+                disabled={aiLoading}
+              />
+              <button onClick={sendAIMessage} disabled={aiLoading || !aiInput.trim()}>
+                ➤
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Teacher Chat Modal */}
+      {showTeacherChat && (
+        <div className="modal-overlay" onClick={() => setShowTeacherChat(false)}>
+          <div className="chat-modal glass-card" onClick={(e) => e.stopPropagation()}>
+            <div className="chat-header">
+              <h3>👩‍🏫 Message Your Teacher</h3>
+              <button onClick={() => setShowTeacherChat(false)} className="close-btn">×</button>
+            </div>
+            <div className="chat-messages">
+              {teacherMessages.length === 0 ? (
+                <div className="chat-empty">
+                  <p>💬 Start a conversation with your teacher!</p>
+                </div>
+              ) : (
+                teacherMessages.map((msg, idx) => (
+                  <div key={idx} className={`chat-message ${msg.role}`}>
+                    <div className="message-content">{msg.content}</div>
+                    <div className="message-time">{new Date(msg.timestamp).toLocaleTimeString()}</div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="chat-input">
+              <input
+                type="text"
+                value={teacherInput}
+                onChange={(e) => setTeacherInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendTeacherMessage()}
+                placeholder="Type your message..."
+                disabled={sendingMessage}
+              />
+              <button onClick={sendTeacherMessage} disabled={sendingMessage || !teacherInput.trim()}>
+                ➤
               </button>
             </div>
           </div>
