@@ -9,6 +9,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentManagement from './pages/admin/StudentManagement';
 import ProjectReview from './pages/admin/ProjectReview';
 import IBRManagement from './pages/admin/IBRManagement';
+import MessagingDashboard from './pages/admin/MessagingDashboard';
 import StudentDashboard from './pages/student/StudentDashboard';
 import ProjectSubmit from './pages/student/ProjectSubmit';
 import ProjectView from './pages/student/ProjectView';
@@ -90,6 +91,10 @@ function App() {
             <Route 
               path="/admin/ibr" 
               element={user?.role === 'ADMIN' ? <IBRManagement /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/admin/messages" 
+              element={user?.role === 'ADMIN' ? <MessagingDashboard /> : <Navigate to="/login" />} 
             />
 
             {/* Student routes */}

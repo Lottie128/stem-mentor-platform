@@ -66,6 +66,7 @@ const Header = ({ user, onLogout }) => {
               <Link to="/admin" className="nav-link">🏠 Dashboard</Link>
               <Link to="/admin/students" className="nav-link">👥 Students</Link>
               <Link to="/admin/ibr" className="nav-link">🇮🇳 IBR</Link>
+              <Link to="/admin/messages" className="nav-link">💬 Messages</Link>
             </>
           ) : (
             <>
