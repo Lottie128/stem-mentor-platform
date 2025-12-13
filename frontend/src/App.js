@@ -13,7 +13,6 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import ProjectSubmit from './pages/student/ProjectSubmit';
 import ProjectView from './pages/student/ProjectView';
 import Awards from './pages/student/Awards';
-import Portfolio from './pages/student/Portfolio';
 import IBRApplication from './pages/student/IBRApplication';
 import ProfileEdit from './pages/student/ProfileEdit';
 import CertificateView from './pages/CertificateView';
@@ -109,10 +108,6 @@ function App() {
             <Route 
               path="/student/awards" 
               element={user?.role === 'STUDENT' && user?.is_active ? <Awards /> : <Navigate to="/login" />} 
-            />
-            <Route 
-              path="/student/portfolio" 
-              element={user?.role === 'STUDENT' && user?.is_active ? <Portfolio /> : <Navigate to="/login" />} 
             />
             <Route 
               path="/student/profile" 

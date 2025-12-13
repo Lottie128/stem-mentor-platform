@@ -12,7 +12,7 @@ const Header = ({ user, onLogout }) => {
 
   const getPortfolioUsername = () => {
     if (user?.email) {
-      return user.email.split('@')[0];
+      return user.email;
     }
     return '';
   };
@@ -65,14 +65,17 @@ const Header = ({ user, onLogout }) => {
             <>
               <Link to="/admin" className="nav-link">🏠 Dashboard</Link>
               <Link to="/admin/students" className="nav-link">👥 Students</Link>
+              <Link to="/admin/ibr" className="nav-link">🇮🇳 IBR</Link>
             </>
           ) : (
             <>
               <Link to="/student" className="nav-link">🏠 Dashboard</Link>
               <Link to="/student/submit" className="nav-link">➕ New Project</Link>
               <Link to="/student/awards" className="nav-link">🏆 Awards</Link>
-              <Link to={`/portfolio/${getPortfolioUsername()}`} className="nav-link" target="_blank">👤 Portfolio</Link>
-              <Link to="/student/profile" className="nav-link">✏️ Profile</Link>
+              <Link to="/student/profile" className="nav-link">⚙️ Settings</Link>
+              <Link to={`/portfolio/${getPortfolioUsername()}`} className="nav-link public-link" target="_blank">
+                🌐 View Public Portfolio
+              </Link>
             </>
           )}
         </nav>
@@ -92,7 +95,7 @@ const Header = ({ user, onLogout }) => {
             </div>
           </div>
           <button onClick={handleLogout} className="logout-btn">
-            🚪 Logout
+            🚺 Logout
           </button>
         </div>
       </div>
