@@ -83,7 +83,7 @@ function App() {
 
             {/* Public routes */}
             <Route path="/portfolio/:username" element={<PublicPortfolio />} />
-            <Route path="/portfolio/:username/project/:projectId" element={<PublicProjectView />} />
+            <Route path="/portfolio/:username/projects/:projectId" element={<PublicProjectView />} />
             <Route path="/certificate/:certificateId" element={<CertificateView />} />
 
             {/* Admin routes */}
