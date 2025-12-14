@@ -6,8 +6,12 @@ import '../../styles/IBRManagement.css';
 const IBRManagement = () => {
   const navigate = useNavigate();
   const [applications, setApplications] = useState([]);
+  const [selectedApp, setSelectedApp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [requiredDocs, setRequiredDocs] = useState('');
 
   useEffect(() => {
     fetchApplications();
@@ -15,163 +19,313 @@ const IBRManagement = () => {
 
   const fetchApplications = async () => {
     try {
-      const response = await axios.get('/api/admin/ibr-applications');
+      const response = await axios.get('/api/ibr/applications');
       setApplications(response.data);
     } catch (error) {
-      console.error('Failed to fetch IBR applications:', error);
+      console.error('Failed to fetch applications:', error);
+      alert('❌ Failed to load applications');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateApplicationStatus = async (id, status) => {
+  const updateStatus = async (appId, status) => {
     try {
-      await axios.patch(`/api/admin/ibr-applications/${id}`, { status });
-      alert(`✅ Application ${status.toLowerCase()}`);
+      await axios.put(`/api/ibr/applications/${appId}/status`, { status });
+      alert(`✅ Status updated to ${status}`);
       fetchApplications();
+      if (selectedApp?.id === appId) {
+        setSelectedApp({ ...selectedApp, status });
+      }
     } catch (error) {
-      alert('❌ Failed to update application status');
+      alert('❌ Failed to update status');
     }
   };
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      PENDING: { className: 'badge-warning', text: 'Pending Review', icon: '⏳' },
-      APPROVED: { className: 'badge-success', text: 'Approved', icon: '✅' },
-      REJECTED: { className: 'badge-danger', text: 'Rejected', icon: '❌' },
-      SUBMITTED: { className: 'badge-info', text: 'Submitted to IBR', icon: '📤' }
-    };
-    return badges[status] || badges.PENDING;
+  const updateProgress = async (appId, progress) => {
+    try {
+      await axios.put(`/api/ibr/applications/${appId}/progress`, { 
+        progress_percentage: parseInt(progress) 
+      });
+      fetchApplications();
+    } catch (error) {
+      alert('❌ Failed to update progress');
+    }
   };
 
-  const filteredApplications = filter === 'ALL' 
-    ? applications 
-    : applications.filter(app => app.status === filter);
+  const saveNotes = async () => {
+    if (!selectedApp) return;
+    
+    try {
+      await axios.put(`/api/ibr/applications/${selectedApp.id}/status`, {
+        status: selectedApp.status,
+        admin_notes: notes,
+        required_documents: requiredDocs
+      });
+      alert('✅ Notes saved successfully');
+      setEditingNotes(false);
+      fetchApplications();
+      setSelectedApp({ ...selectedApp, admin_notes: notes, required_documents: requiredDocs });
+    } catch (error) {
+      alert('❌ Failed to save notes');
+    }
+  };
+
+  const openNotesEditor = (app) => {
+    setSelectedApp(app);
+    setNotes(app.admin_notes || '');
+    setRequiredDocs(app.required_documents || '');
+    setEditingNotes(true);
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'SUBMITTED': '#3b82f6',
+      'REVIEWING': '#f59e0b',
+      'DOCUMENTS_REQUIRED': '#ef4444',
+      'IN_PROGRESS': '#8b5cf6',
+      'APPROVED': '#10b981',
+      'REJECTED': '#6b7280'
+    };
+    return colors[status] || '#6b7280';
+  };
+
+  const getStatusIcon = (status) => {
+    const icons = {
+      'SUBMITTED': '📨',
+      'REVIEWING': '🔍',
+      'DOCUMENTS_REQUIRED': '📄',
+      'IN_PROGRESS': '⚙️',
+      'APPROVED': '✅',
+      'REJECTED': '❌'
+    };
+    return icons[status] || '📋';
+  };
+
+  const filteredApps = applications.filter(app => 
+    filter === 'ALL' || app.status === filter
+  );
+
+  const statusCounts = {
+    ALL: applications.length,
+    SUBMITTED: applications.filter(a => a.status === 'SUBMITTED').length,
+    REVIEWING: applications.filter(a => a.status === 'REVIEWING').length,
+    DOCUMENTS_REQUIRED: applications.filter(a => a.status === 'DOCUMENTS_REQUIRED').length,
+    IN_PROGRESS: applications.filter(a => a.status === 'IN_PROGRESS').length,
+    APPROVED: applications.filter(a => a.status === 'APPROVED').length,
+    REJECTED: applications.filter(a => a.status === 'REJECTED').length
+  };
 
   if (loading) return <div className="loading">Loading IBR applications...</div>;
 
   return (
     <div className="ibr-management">
-      <div className="page-header">
+      <div className="ibr-header">
         <button onClick={() => navigate('/admin')} className="back-btn">← Back</button>
-        <div className="header-content">
-          <h1>🇮🇳 India Book of Records Applications</h1>
-          <p>Review and manage student applications for IBR certification</p>
-        </div>
+        <h1>🇮🇳 IBR Application Management</h1>
+        <p className="subtitle">Manage Invention-Based Research applications and track progress</p>
       </div>
 
-      <div className="filters glass-card">
-        <button 
-          onClick={() => setFilter('ALL')} 
-          className={`filter-btn ${filter === 'ALL' ? 'active' : ''}`}
-        >
-          All ({applications.length})
-        </button>
-        <button 
-          onClick={() => setFilter('PENDING')} 
-          className={`filter-btn ${filter === 'PENDING' ? 'active' : ''}`}
-        >
-          ⏳ Pending ({applications.filter(a => a.status === 'PENDING').length})
-        </button>
-        <button 
-          onClick={() => setFilter('APPROVED')} 
-          className={`filter-btn ${filter === 'APPROVED' ? 'active' : ''}`}
-        >
-          ✅ Approved ({applications.filter(a => a.status === 'APPROVED').length})
-        </button>
-        <button 
-          onClick={() => setFilter('SUBMITTED')} 
-          className={`filter-btn ${filter === 'SUBMITTED' ? 'active' : ''}`}
-        >
-          📤 Submitted ({applications.filter(a => a.status === 'SUBMITTED').length})
-        </button>
+      {/* Filter Tabs */}
+      <div className="filter-tabs">
+        {Object.keys(statusCounts).map(status => (
+          <button
+            key={status}
+            className={`filter-tab ${filter === status ? 'active' : ''}`}
+            onClick={() => setFilter(status)}
+          >
+            {status === 'ALL' ? '📊 All' : `${getStatusIcon(status)} ${status.replace('_', ' ')}`}
+            <span className="count-badge">{statusCounts[status]}</span>
+          </button>
+        ))}
       </div>
 
-      {filteredApplications.length === 0 ? (
-        <div className="empty-state glass-card">
-          <div className="empty-icon">📋</div>
-          <h3>No Applications Found</h3>
-          <p>No IBR applications match the selected filter.</p>
-        </div>
-      ) : (
-        <div className="applications-list">
-          {filteredApplications.map(app => {
-            const badge = getStatusBadge(app.status);
-            return (
-              <div key={app.id} className="application-card glass-card">
-                <div className="card-header">
-                  <div className="student-info">
-                    <h3>{app.student_name}</h3>
-                    <p className="student-meta">
-                      📧 {app.student_email} | 🏫 {app.student_school}
-                    </p>
-                  </div>
-                  <span className={`status-badge ${badge.className}`}>
-                    {badge.icon} {badge.text}
-                  </span>
+      {/* Applications Grid */}
+      <div className="applications-grid">
+        {filteredApps.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📭</div>
+            <h3>No applications found</h3>
+            <p>No IBR applications matching the selected filter</p>
+          </div>
+        ) : (
+          filteredApps.map(app => (
+            <div key={app.id} className="application-card glass-card">
+              {/* Header */}
+              <div className="app-card-header">
+                <div className="app-title">
+                  <h3>{app.project?.title || 'Project'}</h3>
+                  <span className="project-type">{app.project?.type}</span>
                 </div>
-
-                <div className="card-body">
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label>Category:</label>
-                      <span>{app.category}</span>
-                    </div>
-                    <div className="info-item">
-                      <label>Projects Completed:</label>
-                      <span>{app.projects_completed || 'N/A'}</span>
-                    </div>
-                    <div className="info-item">
-                      <label>Applied:</label>
-                      <span>{new Date(app.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  {app.achievement_description && (
-                    <div className="achievement-section">
-                      <h4>Achievement Description:</h4>
-                      <p>{app.achievement_description}</p>
-                    </div>
-                  )}
-
-                  {app.supporting_links && (
-                    <div className="links-section">
-                      <h4>Supporting Links:</h4>
-                      <p><a href={app.supporting_links} target="_blank" rel="noopener noreferrer">🔗 View Links</a></p>
-                    </div>
-                  )}
+                <div 
+                  className="status-badge"
+                  style={{ background: getStatusColor(app.status) + '20', 
+                           color: getStatusColor(app.status),
+                           border: `1px solid ${getStatusColor(app.status)}50` }}
+                >
+                  {getStatusIcon(app.status)} {app.status.replace('_', ' ')}
                 </div>
+              </div>
 
-                {app.status === 'PENDING' && (
-                  <div className="card-actions">
-                    <button 
-                      onClick={() => updateApplicationStatus(app.id, 'APPROVED')}
-                      className="approve-btn"
-                    >
-                      ✅ Approve
-                    </button>
-                    <button 
-                      onClick={() => updateApplicationStatus(app.id, 'REJECTED')}
-                      className="reject-btn"
-                    >
-                      ❌ Reject
-                    </button>
-                  </div>
-                )}
+              {/* Student Info */}
+              <div className="app-student-info">
+                <div className="info-row">
+                  <span className="label">👤 Student:</span>
+                  <span className="value">{app.student?.full_name}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">📧 Email:</span>
+                  <span className="value">{app.student?.email}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">🗂️ Category:</span>
+                  <span className="value">{app.category}</span>
+                </div>
+                <div className="info-row">
+                  <span className="label">📅 Applied:</span>
+                  <span className="value">{new Date(app.applied_date).toLocaleDateString()}</span>
+                </div>
+              </div>
 
-                {app.status === 'APPROVED' && (
-                  <div className="card-actions">
-                    <button 
-                      onClick={() => updateApplicationStatus(app.id, 'SUBMITTED')}
-                      className="submit-btn"
-                    >
-                      📤 Mark as Submitted to IBR
-                    </button>
-                  </div>
+              {/* Progress Bar */}
+              <div className="progress-section">
+                <div className="progress-header">
+                  <span className="progress-label">Progress</span>
+                  <span className="progress-value">{app.progress_percentage}%</span>
+                </div>
+                <div className="progress-bar-container">
+                  <div 
+                    className="progress-bar-fill"
+                    style={{ 
+                      width: `${app.progress_percentage}%`,
+                      background: getStatusColor(app.status)
+                    }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={app.progress_percentage}
+                  onChange={(e) => updateProgress(app.id, e.target.value)}
+                  className="progress-slider"
+                />
+              </div>
+
+              {/* Description */}
+              {app.description && (
+                <div className="app-description">
+                  <strong>📝 Description:</strong>
+                  <p>{app.description}</p>
+                </div>
+              )}
+
+              {/* Admin Notes Preview */}
+              {app.admin_notes && (
+                <div className="notes-preview">
+                  <strong>📌 Admin Notes:</strong>
+                  <p>{app.admin_notes.substring(0, 100)}{app.admin_notes.length > 100 ? '...' : ''}</p>
+                </div>
+              )}
+
+              {/* Required Documents */}
+              {app.required_documents && (
+                <div className="required-docs">
+                  <strong>📄 Required Documents:</strong>
+                  <p>{app.required_documents}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="app-actions">
+                <select
+                  value={app.status}
+                  onChange={(e) => updateStatus(app.id, e.target.value)}
+                  className="status-select"
+                >
+                  <option value="SUBMITTED">📨 Submitted</option>
+                  <option value="REVIEWING">🔍 Reviewing</option>
+                  <option value="DOCUMENTS_REQUIRED">📄 Docs Required</option>
+                  <option value="IN_PROGRESS">⚙️ In Progress</option>
+                  <option value="APPROVED">✅ Approved</option>
+                  <option value="REJECTED">❌ Rejected</option>
+                </select>
+
+                <button 
+                  onClick={() => openNotesEditor(app)} 
+                  className="notes-btn"
+                >
+                  ✏️ Manage Notes
+                </button>
+
+                {app.google_drive_link && (
+                  <a 
+                    href={app.google_drive_link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="drive-btn"
+                  >
+                    📁 View Files
+                  </a>
                 )}
               </div>
-            );
-          })}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Notes Editor Modal */}
+      {editingNotes && selectedApp && (
+        <div className="modal-overlay" onClick={() => setEditingNotes(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📝 Manage Application Notes</h2>
+              <button onClick={() => setEditingNotes(false)} className="close-btn">✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="app-info-summary">
+                <h3>{selectedApp.project?.title}</h3>
+                <p>Student: {selectedApp.student?.full_name}</p>
+                <p>Status: <span style={{ color: getStatusColor(selectedApp.status) }}>
+                  {selectedApp.status}
+                </span></p>
+              </div>
+
+              <div className="form-group">
+                <label>📌 Admin Notes (visible to student)</label>
+                <p className="helper-text">Provide feedback, updates, or next steps for the student</p>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={8}
+                  placeholder="Enter notes for the student...\n\nExample:\n- Your application is under review\n- Please submit the following documents\n- Next step: Interview scheduled for...\n- Congratulations! Your application has been approved"
+                  className="notes-textarea"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>📄 Required Documents</label>
+                <p className="helper-text">List any documents the student needs to submit</p>
+                <textarea
+                  value={requiredDocs}
+                  onChange={(e) => setRequiredDocs(e.target.value)}
+                  rows={5}
+                  placeholder="List required documents...\n\nExample:\n- Project report (PDF)\n- Presentation slides\n- Demo video\n- Budget breakdown"
+                  className="notes-textarea"
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button onClick={() => setEditingNotes(false)} className="cancel-btn">
+                Cancel
+              </button>
+              <button onClick={saveNotes} className="save-btn">
+                💾 Save Notes
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
