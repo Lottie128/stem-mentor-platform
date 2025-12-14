@@ -175,7 +175,7 @@ cd stem-mentor-platform
 psql -U postgres
 
 # Create database
-CREATE DATABASE stem_mentor_db;
+CREATE DATABASE stem_mentor;
 
 # Exit
 \q
