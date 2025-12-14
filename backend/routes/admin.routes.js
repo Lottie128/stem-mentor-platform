@@ -111,6 +111,26 @@ router.patch('/students/:id/toggle-active', async (req, res) => {
   }
 });
 
+// Update student expiry date
+router.patch('/students/:id/expiry', async (req, res) => {
+  try {
+    const { expires_at } = req.body;
+    const student = await User.findByPk(req.params.id);
+    
+    if (!student || student.role !== 'STUDENT') {
+      return res.status(404).json({ message: 'Student not found' });
+    }
+
+    student.expires_at = expires_at ? new Date(expires_at) : null;
+    await student.save();
+
+    res.json({ message: 'Expiry date updated', student });
+  } catch (error) {
+    console.error('Update expiry error:', error);
+    res.status(500).json({ message: 'Failed to update expiry date' });
+  }
+});
+
 // Get all projects with optional limit
 router.get('/projects', async (req, res) => {
   try {
