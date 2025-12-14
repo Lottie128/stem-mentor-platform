@@ -242,12 +242,22 @@
 }
 
 .app-description p,
-.notes-preview p,
-.required-docs p {
+.notes-preview p {
   color: rgba(255, 255, 255, 0.6);
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
+}
+
+.required-docs ul {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  padding-left: 1.5rem;
+  line-height: 1.8;
+}
+
+.required-docs li {
+  margin: 0.25rem 0;
 }
 
 /* Actions */
@@ -412,6 +422,31 @@
 
 .notes-textarea::placeholder {
   color: rgba(255, 255, 255, 0.3);
+}
+
+.docs-preview {
+  margin-top: 0.75rem;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  padding: 1rem;
+  border-radius: 0.75rem;
+}
+
+.docs-preview strong {
+  color: #a78bfa;
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.docs-preview ul {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.docs-preview li {
+  margin: 0.25rem 0;
 }
 
 .modal-footer {

@@ -49,7 +49,7 @@ const IBRManagement = () => {
       });
       fetchApplications();
     } catch (error) {
-      alert('❌ Failed to update progress');
+      console.error('Failed to update progress:', error);
     }
   };
 
@@ -59,14 +59,22 @@ const IBRManagement = () => {
     try {
       await axios.put(`/api/ibr/applications/${selectedApp.id}/status`, {
         status: selectedApp.status,
-        admin_notes: notes,
-        required_documents: requiredDocs
+        admin_notes: notes || null,
+        required_documents: requiredDocs // Will be converted to array in backend
       });
       alert('✅ Notes saved successfully');
       setEditingNotes(false);
       fetchApplications();
-      setSelectedApp({ ...selectedApp, admin_notes: notes, required_documents: requiredDocs });
+      
+      // Update selected app
+      const docsArray = requiredDocs.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+      setSelectedApp({ 
+        ...selectedApp, 
+        admin_notes: notes,
+        required_documents: docsArray
+      });
     } catch (error) {
+      console.error('Save notes error:', error);
       alert('❌ Failed to save notes');
     }
   };
@@ -74,7 +82,14 @@ const IBRManagement = () => {
   const openNotesEditor = (app) => {
     setSelectedApp(app);
     setNotes(app.admin_notes || '');
-    setRequiredDocs(app.required_documents || '');
+    
+    // Convert array to string for textarea
+    if (Array.isArray(app.required_documents) && app.required_documents.length > 0) {
+      setRequiredDocs(app.required_documents.join('\n'));
+    } else {
+      setRequiredDocs('');
+    }
+    
     setEditingNotes(true);
   };
 
@@ -229,10 +244,14 @@ const IBRManagement = () => {
               )}
 
               {/* Required Documents */}
-              {app.required_documents && (
+              {Array.isArray(app.required_documents) && app.required_documents.length > 0 && (
                 <div className="required-docs">
                   <strong>📄 Required Documents:</strong>
-                  <p>{app.required_documents}</p>
+                  <ul>
+                    {app.required_documents.map((doc, idx) => (
+                      <li key={idx}>{doc}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -299,21 +318,31 @@ const IBRManagement = () => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={8}
-                  placeholder="Enter notes for the student...\n\nExample:\n- Your application is under review\n- Please submit the following documents\n- Next step: Interview scheduled for...\n- Congratulations! Your application has been approved"
+                  placeholder="Enter notes for the student...\n\nExample:\n- Your application is under review\n- Great work on the project documentation!\n- Next step: Interview scheduled for Dec 20th\n- Congratulations! Your application has been approved"
                   className="notes-textarea"
                 />
               </div>
 
               <div className="form-group">
                 <label>📄 Required Documents</label>
-                <p className="helper-text">List any documents the student needs to submit</p>
+                <p className="helper-text">List any documents the student needs to submit (one per line)</p>
                 <textarea
                   value={requiredDocs}
                   onChange={(e) => setRequiredDocs(e.target.value)}
-                  rows={5}
-                  placeholder="List required documents...\n\nExample:\n- Project report (PDF)\n- Presentation slides\n- Demo video\n- Budget breakdown"
+                  rows={6}
+                  placeholder="List required documents (one per line)...\n\nExample:\nProject report (PDF)\nPresentation slides (PPT)\nDemo video link\nBudget breakdown (Excel)\nTeacher recommendation letter"
                   className="notes-textarea"
                 />
+                {requiredDocs && (
+                  <div className="docs-preview">
+                    <strong>Preview:</strong>
+                    <ul>
+                      {requiredDocs.split('\n').filter(line => line.trim()).map((doc, idx) => (
+                        <li key={idx}>{doc.trim()}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -28,7 +28,8 @@ exports.submitApplication = async (req, res) => {
       description,
       google_drive_link,
       status: 'SUBMITTED',
-      progress_percentage: 10
+      progress_percentage: 10,
+      required_documents: []
     });
 
     res.status(201).json(application);
@@ -91,7 +92,7 @@ exports.getAllApplications = async (req, res) => {
         {
           model: User,
           as: 'student',
-          attributes: ['full_name', 'email']
+          attributes: ['full_name', 'email', 'school', 'country']
         },
         {
           model: Project,
@@ -119,9 +120,32 @@ exports.updateApplicationStatus = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    application.status = status;
-    application.admin_notes = admin_notes || application.admin_notes;
-    application.required_documents = required_documents || application.required_documents;
+    // Update status
+    if (status) {
+      application.status = status;
+    }
+
+    // Update admin notes
+    if (admin_notes !== undefined) {
+      application.admin_notes = admin_notes;
+    }
+
+    // Update required documents (should be array)
+    if (required_documents !== undefined) {
+      // Convert string to array if needed
+      if (typeof required_documents === 'string') {
+        // Split by newlines and filter empty lines
+        const docsArray = required_documents
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0);
+        application.required_documents = docsArray;
+      } else if (Array.isArray(required_documents)) {
+        application.required_documents = required_documents;
+      } else {
+        application.required_documents = [];
+      }
+    }
 
     // Update progress based on status
     const progressMap = {
@@ -132,17 +156,38 @@ exports.updateApplicationStatus = async (req, res) => {
       'APPROVED': 100,
       'REJECTED': 0
     };
-    application.progress_percentage = progressMap[status] || application.progress_percentage;
+    
+    if (status && progressMap[status] !== undefined) {
+      application.progress_percentage = progressMap[status];
+    }
 
-    if (status === 'APPROVED') {
+    // Set approved date if status is APPROVED
+    if (status === 'APPROVED' && !application.approved_date) {
       application.approved_date = new Date();
     }
 
     await application.save();
-    res.json(application);
+    
+    // Fetch updated application with relations
+    const updated = await IBRApplication.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: 'student',
+          attributes: ['full_name', 'email']
+        },
+        {
+          model: Project,
+          as: 'project',
+          attributes: ['title', 'type']
+        }
+      ]
+    });
+    
+    res.json(updated);
   } catch (error) {
     console.error('Update application status error:', error);
-    res.status(500).json({ message: 'Failed to update status' });
+    res.status(500).json({ message: 'Failed to update status', error: error.message });
   }
 };
 
@@ -156,7 +201,7 @@ exports.updateProgress = async (req, res) => {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    application.progress_percentage = Math.min(Math.max(progress_percentage, 0), 100);
+    application.progress_percentage = Math.min(Math.max(parseInt(progress_percentage, 10), 0), 100);
     await application.save();
 
     res.json(application);
