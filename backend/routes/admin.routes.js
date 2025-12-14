@@ -243,6 +243,11 @@ router.post('/projects/:id/plan', async (req, res) => {
     const { components, steps, safety_notes } = req.body;
     const projectId = req.params.id;
 
+    // Validate required fields
+    if (!components || !steps) {
+      return res.status(400).json({ message: 'Components and steps are required' });
+    }
+
     const project = await Project.findByPk(projectId);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -253,7 +258,7 @@ router.post('/projects/:id/plan', async (req, res) => {
     if (existingPlan) {
       existingPlan.components = components;
       existingPlan.steps = steps;
-      existingPlan.safety_notes = safety_notes;
+      existingPlan.safety_notes = safety_notes || existingPlan.safety_notes;
       existingPlan.finalized_by_admin_id = req.user.id;
       await existingPlan.save();
       
@@ -267,7 +272,7 @@ router.post('/projects/:id/plan', async (req, res) => {
       project_id: projectId,
       components,
       steps,
-      safety_notes,
+      safety_notes: safety_notes || '',
       finalized_by_admin_id: req.user.id
     });
 
@@ -287,6 +292,11 @@ router.put('/projects/:id/plan', async (req, res) => {
     const { components, steps, safety_notes } = req.body;
     const projectId = req.params.id;
 
+    // Validate required fields
+    if (!components || !steps) {
+      return res.status(400).json({ message: 'Components and steps are required' });
+    }
+
     const project = await Project.findByPk(projectId);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
@@ -297,7 +307,7 @@ router.put('/projects/:id/plan', async (req, res) => {
     if (existingPlan) {
       existingPlan.components = components;
       existingPlan.steps = steps;
-      existingPlan.safety_notes = safety_notes;
+      existingPlan.safety_notes = safety_notes || existingPlan.safety_notes;
       existingPlan.finalized_by_admin_id = req.user.id;
       await existingPlan.save();
       
@@ -311,7 +321,7 @@ router.put('/projects/:id/plan', async (req, res) => {
       project_id: projectId,
       components,
       steps,
-      safety_notes,
+      safety_notes: safety_notes || '',
       finalized_by_admin_id: req.user.id
     });
 
