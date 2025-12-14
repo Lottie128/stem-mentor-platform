@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { authenticate, requireRole } = require('../middleware/auth.middleware');
 const { User, Project, ProjectPlan, Certificate, IBRApplication } = require('../models');
+const { generateProjectPlan } = require('../services/gemini.service');
 const { Op } = require('sequelize');
 
 // Protect all admin routes
@@ -183,6 +184,36 @@ router.get('/projects/:id', async (req, res) => {
   } catch (error) {
     console.error('Get project error:', error);
     res.status(500).json({ message: 'Failed to fetch project' });
+  }
+});
+
+// Generate AI project plan
+router.post('/projects/:id/generate-plan', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    console.log(`\n🤖 Generating AI plan for project ${projectId}...`);
+    
+    // Generate plan using Gemini AI
+    const generatedPlan = await generateProjectPlan(project);
+    
+    console.log('✅ AI plan generated successfully');
+    
+    res.json({
+      message: 'Plan generated successfully',
+      plan: generatedPlan
+    });
+  } catch (error) {
+    console.error('❌ Generate plan error:', error);
+    res.status(500).json({ 
+      message: 'Failed to generate plan', 
+      error: error.message 
+    });
   }
 });
 
