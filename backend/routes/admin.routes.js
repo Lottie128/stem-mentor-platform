@@ -237,7 +237,7 @@ router.patch('/projects/:id/status', async (req, res) => {
   }
 });
 
-// Create project plan
+// Create or Update project plan (POST and PUT)
 router.post('/projects/:id/plan', async (req, res) => {
   try {
     const { components, steps, safety_notes } = req.body;
@@ -278,6 +278,50 @@ router.post('/projects/:id/plan', async (req, res) => {
   } catch (error) {
     console.error('Create plan error:', error);
     res.status(500).json({ message: 'Failed to create plan', error: error.message });
+  }
+});
+
+// Update project plan (PUT)
+router.put('/projects/:id/plan', async (req, res) => {
+  try {
+    const { components, steps, safety_notes } = req.body;
+    const projectId = req.params.id;
+
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const existingPlan = await ProjectPlan.findOne({ where: { project_id: projectId } });
+    
+    if (existingPlan) {
+      existingPlan.components = components;
+      existingPlan.steps = steps;
+      existingPlan.safety_notes = safety_notes;
+      existingPlan.finalized_by_admin_id = req.user.id;
+      await existingPlan.save();
+      
+      project.status = 'PLAN_READY';
+      await project.save();
+      
+      return res.json({ message: 'Plan updated', plan: existingPlan });
+    }
+
+    const plan = await ProjectPlan.create({
+      project_id: projectId,
+      components,
+      steps,
+      safety_notes,
+      finalized_by_admin_id: req.user.id
+    });
+
+    project.status = 'PLAN_READY';
+    await project.save();
+
+    res.status(201).json({ message: 'Plan created', plan });
+  } catch (error) {
+    console.error('Update plan error:', error);
+    res.status(500).json({ message: 'Failed to update plan', error: error.message });
   }
 });
 
