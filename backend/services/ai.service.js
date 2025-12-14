@@ -12,7 +12,7 @@ if (!GEMINI_API_KEY) {
   console.log('   📍 Get your key at: https://aistudio.google.com/app/apikey');
 } else {
   console.log('   ✅ CONFIGURED - Key length:', GEMINI_API_KEY.length);
-  console.log('   🚀 AI generation enabled with Gemini 2.0 Flash!');
+  console.log('   🚀 AI generation enabled with Gemini 1.5 Flash!');
 }
 console.log('');
 
@@ -27,14 +27,14 @@ exports.generateProjectPlan = async (project) => {
       return generateMockPlan(project);
     }
 
-    console.log('🤖 Generating AI plan using Gemini 2.0 Flash...');
+    console.log('🤖 Generating AI plan using Gemini 1.5 Flash...');
     console.log('   Project:', project.title);
     console.log('   Type:', project.type);
     console.log('   Experience:', project.experience_level);
     
-    // Use Gemini 2.0 Flash (latest stable model as of Dec 2024/Jan 2025)
+    // Use Gemini 1.5 Flash Latest (stable production model)
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-1.5-flash-latest',
       generationConfig: {
         temperature: 0.8,
         topK: 40,
