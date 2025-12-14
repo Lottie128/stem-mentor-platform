@@ -81,12 +81,34 @@ router.put('/profile', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (full_name) user.full_name = full_name;
-    if (age !== undefined) user.age = age;
-    if (school !== undefined) user.school = school;
-    if (country !== undefined) user.country = country;
-    if (bio !== undefined) user.bio = bio;
-    if (profile_picture !== undefined) user.profile_picture = profile_picture;
+    // Update fields - convert empty strings to null for numeric/optional fields
+    if (full_name !== undefined) user.full_name = full_name;
+    
+    // Age: convert empty string to null for integer field
+    if (age !== undefined) {
+      user.age = age === '' || age === null ? null : parseInt(age, 10);
+    }
+    
+    // School: convert empty string to null
+    if (school !== undefined) {
+      user.school = school === '' ? null : school;
+    }
+    
+    // Country: convert empty string to null
+    if (country !== undefined) {
+      user.country = country === '' ? null : country;
+    }
+    
+    // Bio: convert empty string to null
+    if (bio !== undefined) {
+      user.bio = bio === '' ? null : bio;
+    }
+    
+    // Profile picture: convert empty string to null
+    if (profile_picture !== undefined) {
+      user.profile_picture = profile_picture === '' ? null : profile_picture;
+    }
+    
     if (skills !== undefined) user.skills = skills;
     if (social_links !== undefined) user.social_links = social_links;
 
@@ -95,7 +117,7 @@ router.put('/profile', authenticate, async (req, res) => {
     res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Failed to update profile' });
+    res.status(500).json({ message: 'Failed to update profile', error: error.message });
   }
 });
 
