@@ -1,83 +1,73 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/Login.css';
 
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await axios.post('/api/auth/login', formData);
       const { token, user } = response.data;
       
       localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      if (user.role === 'STUDENT' && !user.is_active) {
-        setError('Your account is not active. Please contact your mentor.');
-        setLoading(false);
-        return;
-      }
+      localStorage.setItem('user', JSON.stringify(user));
       
       onLogin(user);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Login failed');
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
+    <div className="login-page">
+      <div className="login-card glass-card">
         <div className="login-header">
-          <h1>Welcome Back</h1>
-          <p>Sign in to STEM Mentor Platform</p>
+          <h1>STEM Mentor Platform</h1>
+          <p>Sign in to your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
-          {error && <div className="error-message">{error}</div>}
-          
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label>Email</label>
             <input
               type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
               placeholder="your.email@example.com"
               required
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label>Password</label>
             <input
               type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
               placeholder="Enter your password"
               required
             />
           </div>
 
-          <button type="submit" className="login-button" disabled={loading}>
+          <div className="forgot-password-link">
+            <Link to="/forgot-password">Forgot Password?</Link>
+          </div>
+
+          <button type="submit" className="login-btn" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div className="login-footer">
-          <p>Demo Accounts:</p>
-          <p><strong>Admin:</strong> admin@stemmentor.com / admin123</p>
-          <p><strong>Student:</strong> student@example.com / student123</p>
-        </div>
       </div>
     </div>
   );

@@ -5,6 +5,8 @@ import Loader from './components/Loader';
 import Header from './components/Header';
 import ParticlesBackground from './components/ParticlesBackground';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import NotActive from './pages/NotActive';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentManagement from './pages/admin/StudentManagement';
@@ -17,6 +19,7 @@ import ProjectView from './pages/student/ProjectView';
 import Awards from './pages/student/Awards';
 import IBRApplication from './pages/student/IBRApplication';
 import ProfileEdit from './pages/student/ProfileEdit';
+import ChangePassword from './pages/student/ChangePassword';
 import CertificateView from './pages/CertificateView';
 import PublicPortfolio from './pages/PublicPortfolio';
 import PublicProjectView from './pages/PublicProjectView';
@@ -79,6 +82,8 @@ function App() {
               path="/login" 
               element={user ? <Navigate to={user.role === 'ADMIN' ? '/admin' : '/student'} /> : <Login onLogin={handleLogin} />} 
             />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
             <Route path="/not-active" element={<NotActive />} />
 
             {/* Public routes */}
@@ -128,6 +133,10 @@ function App() {
             <Route 
               path="/student/profile" 
               element={user?.role === 'STUDENT' && user?.is_active ? <ProfileEdit /> : <Navigate to="/login" />} 
+            />
+            <Route 
+              path="/student/change-password" 
+              element={user?.role === 'STUDENT' && user?.is_active ? <ChangePassword /> : <Navigate to="/login" />} 
             />
             <Route 
               path="/student/ibr-apply" 
