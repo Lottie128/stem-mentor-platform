@@ -61,14 +61,23 @@ const ProjectReview = () => {
 
   const approvePlan = async () => {
     try {
+      // Send plan data in the format backend expects
       await axios.put(`/api/admin/projects/${projectId}/plan`, {
-        plan: aiPlan,
+        components: aiPlan.components,
+        steps: aiPlan.steps,
+        safety_notes: aiPlan.safety_notes || ''
+      });
+      
+      // Update project status
+      await axios.patch(`/api/admin/projects/${projectId}/status`, {
         status: 'PLAN_READY'
       });
+      
       alert('✅ Plan approved and published!');
       navigate('/admin');
     } catch (error) {
-      alert('❌ Failed to approve plan');
+      console.error('Approve plan error:', error);
+      alert('❌ Failed to approve plan: ' + (error.response?.data?.message || 'Unknown error'));
     }
   };
 
@@ -87,7 +96,7 @@ const ProjectReview = () => {
         <div className="details-grid">
           <div className="detail-item">
             <label>Student:</label>
-            <span>{project.student_name}</span>
+            <span>{project.student?.full_name || project.student_name}</span>
           </div>
           <div className="detail-item">
             <label>Title:</label>
@@ -122,6 +131,8 @@ const ProjectReview = () => {
 
       {!aiPlan && (
         <div className="generate-section glass-card">
+          <h3>Generate Project Plan</h3>
+          <p>Use AI to automatically generate a detailed project plan with components, steps, and safety notes.</p>
           <button onClick={generateAIPlan} disabled={generating} className="generate-btn">
             {generating ? '⏳ Generating AI Plan...' : '🤖 Generate Draft Plan with AI'}
           </button>
@@ -130,34 +141,65 @@ const ProjectReview = () => {
 
       {aiPlan && (
         <div className="plan-editor glass-card">
-          <h2>Project Plan {editingPlan && <span className="editing-badge">✏️ Editing</span>}</h2>
+          <div className="plan-header">
+            <h2>Project Plan</h2>
+            {editingPlan && <span className="editing-badge">✏️ Editing Mode</span>}
+          </div>
           
           <div className="components-section">
             <h3>📦 Components Needed</h3>
-            <textarea
-              value={JSON.stringify(aiPlan.components, null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setAiPlan({...aiPlan, components: parsed});
-                } catch {}
-              }}
-              rows={10}
-            />
+            {editingPlan ? (
+              <textarea
+                value={JSON.stringify(aiPlan.components, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    setAiPlan({...aiPlan, components: parsed});
+                  } catch {}
+                }}
+                rows={10}
+                className="json-editor"
+              />
+            ) : (
+              <div className="components-list">
+                {aiPlan.components?.map((comp, idx) => (
+                  <div key={idx} className="component-item">
+                    <strong>{comp.name}</strong> (Qty: {comp.quantity}) - {comp.estimated_cost}
+                    <p>{comp.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="steps-section">
             <h3>🔨 Build Steps</h3>
-            <textarea
-              value={JSON.stringify(aiPlan.steps, null, 2)}
-              onChange={(e) => {
-                try {
-                  const parsed = JSON.parse(e.target.value);
-                  setAiPlan({...aiPlan, steps: parsed});
-                } catch {}
-              }}
-              rows={15}
-            />
+            {editingPlan ? (
+              <textarea
+                value={JSON.stringify(aiPlan.steps, null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    setAiPlan({...aiPlan, steps: parsed});
+                  } catch {}
+                }}
+                rows={15}
+                className="json-editor"
+              />
+            ) : (
+              <div className="steps-list">
+                {aiPlan.steps?.map((step, idx) => (
+                  <div key={idx} className="step-item">
+                    <div className="step-number">Step {step.step}</div>
+                    <div className="step-content">
+                      <strong>{step.title}</strong>
+                      <p>{step.description}</p>
+                      <span className={`tag-badge ${step.tag}`}>{step.tag}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="safety-section">
@@ -167,6 +209,7 @@ const ProjectReview = () => {
               onChange={(e) => setAiPlan({...aiPlan, safety_notes: e.target.value})}
               rows={5}
               placeholder="Add important safety considerations..."
+              disabled={!editingPlan}
             />
           </div>
 
@@ -175,7 +218,7 @@ const ProjectReview = () => {
               {generating ? '⏳ Regenerating...' : '🔄 Regenerate with AI'}
             </button>
             <button onClick={() => setEditingPlan(!editingPlan)} className="edit-btn">
-              {editingPlan ? '🔒 Stop Editing' : '✏️ Edit Plan'}
+              {editingPlan ? '🔒 Lock Plan' : '✏️ Edit Plan'}
             </button>
             <button onClick={approvePlan} className="approve-btn">
               ✅ Approve & Publish Plan
