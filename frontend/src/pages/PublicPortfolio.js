@@ -155,7 +155,7 @@ const PublicPortfolio = () => {
                 <div 
                   key={project.id} 
                   className="project-card glass-card"
-                  onClick={() => navigate(`/portfolio/${username}/project/${project.id}`)}
+                  onClick={() => navigate(`/portfolio/${username}/projects/${project.id}`)}
                 >
                   <div className="project-header">
                     <span className="project-type">{project.type}</span>
