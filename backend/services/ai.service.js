@@ -12,7 +12,7 @@ if (!GEMINI_API_KEY) {
   console.log('   📍 Get your key at: https://aistudio.google.com/app/apikey');
 } else {
   console.log('   ✅ CONFIGURED - Key length:', GEMINI_API_KEY.length);
-  console.log('   🚀 AI generation enabled!');
+  console.log('   🚀 AI generation enabled with Gemini 1.5 Flash!');
 }
 console.log('');
 
@@ -27,14 +27,14 @@ exports.generateProjectPlan = async (project) => {
       return generateMockPlan(project);
     }
 
-    console.log('🤖 Generating AI plan using Gemini Pro...');
+    console.log('🤖 Generating AI plan using Gemini 1.5 Flash...');
     console.log('   Project:', project.title);
     console.log('   Type:', project.type);
     console.log('   Experience:', project.experience_level);
     
-    // Use stable Gemini Pro model
+    // Use latest Gemini 1.5 Flash model (faster and more efficient)
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-pro',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         temperature: 0.8,
         topK: 40,
@@ -131,6 +131,8 @@ Rules:
     } else if (error.message.includes('PERMISSION_DENIED')) {
       console.error('🔒 Permission denied - API key may not have access to Gemini API');
       console.error('   Make sure Gemini API is enabled for your key');
+    } else if (error.message.includes('not found') || error.message.includes('404')) {
+      console.error('🔄 Model not available - using fallback');
     }
     
     console.log('📦 Falling back to mock plan');
