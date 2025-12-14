@@ -6,6 +6,8 @@ const StudentManagement = () => {
   const [students, setStudents] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,24 @@ const StudentManagement = () => {
     }
   };
 
+  const handleResetPassword = async (student) => {
+    setSelectedStudent(student);
+    setShowResetPasswordModal(true);
+  };
+
+  const confirmResetPassword = async () => {
+    try {
+      const response = await axios.post(`/api/password/admin/reset/${selectedStudent.id}`, {});
+      
+      setGeneratedEmail(response.data.student.email);
+      setGeneratedPassword(response.data.newPassword);
+      setShowResetPasswordModal(false);
+      setShowPasswordModal(true);
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to reset password');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading students...</div>;
   }
@@ -102,12 +122,21 @@ const StudentManagement = () => {
                 <td>{student.expires_at ? new Date(student.expires_at).toLocaleDateString() : 'Never'}</td>
                 <td>{new Date(student.created_at).toLocaleDateString()}</td>
                 <td>
-                  <button 
-                    onClick={() => toggleStudentStatus(student.id)}
-                    className={`toggle-btn ${student.is_active ? 'deactivate' : 'activate'}`}
-                  >
-                    {student.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
+                  <div className="action-buttons">
+                    <button 
+                      onClick={() => toggleStudentStatus(student.id)}
+                      className={`toggle-btn ${student.is_active ? 'deactivate' : 'activate'}`}
+                    >
+                      {student.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button 
+                      onClick={() => handleResetPassword(student)}
+                      className="reset-password-btn"
+                      title="Reset student password"
+                    >
+                      🔐 Reset Password
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -195,16 +224,41 @@ const StudentManagement = () => {
         </div>
       )}
 
+      {/* Reset Password Confirmation Modal */}
+      {showResetPasswordModal && (
+        <div className="modal-overlay" onClick={() => setShowResetPasswordModal(false)}>
+          <div className="modal-content confirmation-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>⚠️ Reset Password</h2>
+            </div>
+            <div className="confirmation-content">
+              <p>Are you sure you want to reset the password for:</p>
+              <p className="student-name"><strong>{selectedStudent?.full_name}</strong></p>
+              <p className="student-email">{selectedStudent?.email}</p>
+              <p className="warning-text">💡 A new random password will be generated and shown to you.</p>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowResetPasswordModal(false)} className="cancel-btn">
+                Cancel
+              </button>
+              <button onClick={confirmResetPassword} className="submit-btn danger">
+                ✅ Yes, Reset Password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Password Display Modal */}
       {showPasswordModal && (
         <div className="modal-overlay" onClick={() => setShowPasswordModal(false)}>
           <div className="modal-content password-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>✅ Student Account Created!</h2>
+              <h2>✅ New Password Generated!</h2>
             </div>
             <div className="password-display">
               <p><strong>Email:</strong> {generatedEmail}</p>
-              <p><strong>Password:</strong> <code>{generatedPassword}</code></p>
+              <p><strong>Password:</strong> <code className="password-code">{generatedPassword}</code></p>
               <div className="warning">
                 <p>⚠️ <strong>Important:</strong> Share these credentials with the student securely. They can change their password after logging in.</p>
               </div>
