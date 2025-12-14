@@ -34,6 +34,7 @@ app.use('/api/chat', require('./routes/chat.routes'));
 app.use('/api/password', require('./routes/password.routes'));
 app.use('/api/awards', require('./routes/awards.routes'));
 app.use('/api/submissions', require('./routes/submissions.routes'));
+app.use('/api/ibr', require('./routes/ibr.routes')); // IBR routes added
 
 // Socket.io connection
 io.on('connection', (socket) => {
