@@ -3,7 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { authenticate, requireRole } = require('../middleware/auth.middleware');
 const { User, Project, ProjectPlan, Certificate, IBRApplication } = require('../models');
-const { generateProjectPlan } = require('../services/gemini.service');
+const { generateProjectPlan } = require('../services/ai.service');
 const { Op } = require('sequelize');
 
 // Protect all admin routes
