@@ -36,10 +36,11 @@ exports.generateProjectPlan = async (project) => {
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-2.5-flash',
       generationConfig: {
-        temperature: 0.8,
+        temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 3000,
+        responseMimeType: 'application/json',
       }
     });
 
@@ -53,10 +54,15 @@ Project Details:
 - Available Tools: ${project.available_tools || 'Basic tools only'}
 - Budget: ${project.budget_range}
 
-Generate a JSON response with this EXACT structure (no markdown, just JSON):
+Generate a valid JSON object with this structure:
 {
   "components": [
-    {"name": "Arduino Uno", "description": "Main microcontroller", "quantity": 1, "estimated_cost": "₹400"}
+    {
+      "name": "Arduino Uno",
+      "description": "Main microcontroller board",
+      "quantity": 1,
+      "estimated_cost": "₹400"
+    }
   ],
   "steps": [
     {
@@ -75,9 +81,9 @@ Rules:
 - Tag: "home" (safe alone) or "center" (needs supervision)
 - Budget: ${project.budget_range}
 - Include 6-10 clear, actionable steps
-- Include 4-8 realistic components with costs in ₹
+- Include 4-8 realistic components with Indian prices in ₹
 - Focus on safety and education
-- Return ONLY valid JSON`;
+- Return ONLY valid JSON, no explanations`;
 
     console.log('📤 Sending request to Gemini API...');
     const result = await model.generateContent(prompt);
@@ -85,8 +91,9 @@ Rules:
     const text = response.text();
 
     console.log('📥 Received AI response, parsing...');
+    console.log('   Response length:', text.length);
 
-    // Extract JSON from response
+    // Clean and extract JSON
     let jsonText = text.trim();
     
     // Remove markdown code blocks if present
@@ -97,26 +104,49 @@ Rules:
       }
     }
 
-    // Find JSON object
-    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+    // Find JSON object (more robust matching)
+    let jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      // Try array format
+      jsonMatch = jsonText.match(/\[[\s\S]*\]/);
+    }
+    
     if (!jsonMatch) {
       console.error('❌ Could not find JSON in response');
-      console.error('Response text:', text.substring(0, 200));
-      throw new Error('Could not parse AI response');
+      console.error('Response preview:', text.substring(0, 300));
+      throw new Error('Could not parse AI response - no JSON found');
     }
 
-    const planData = JSON.parse(jsonMatch[0]);
+    let planData;
+    try {
+      planData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('❌ JSON parse error:', parseError.message);
+      console.error('Attempted to parse:', jsonMatch[0].substring(0, 200));
+      throw new Error('Invalid JSON from AI: ' + parseError.message);
+    }
     
     // Validate structure
-    if (!planData.components || !planData.steps || !Array.isArray(planData.components) || !Array.isArray(planData.steps)) {
-      console.error('❌ Invalid plan structure');
+    if (!planData.components || !planData.steps) {
+      console.error('❌ Invalid plan structure - missing components or steps');
+      console.error('Received:', JSON.stringify(planData, null, 2).substring(0, 200));
       throw new Error('Invalid plan structure from AI');
+    }
+
+    if (!Array.isArray(planData.components) || !Array.isArray(planData.steps)) {
+      console.error('❌ Components or steps are not arrays');
+      throw new Error('Invalid plan structure - components/steps must be arrays');
+    }
+
+    // Ensure safety_notes exists
+    if (!planData.safety_notes) {
+      planData.safety_notes = 'Follow all safety guidelines and work under supervision when needed.';
     }
 
     console.log('✅ AI plan generated successfully!');
     console.log('   Components:', planData.components.length);
     console.log('   Steps:', planData.steps.length);
-    console.log('   Safety notes:', planData.safety_notes ? 'Yes' : 'No');
+    console.log('   Safety notes:', planData.safety_notes.length, 'chars');
     
     return planData;
     
@@ -152,19 +182,20 @@ function generateMockPlan(project) {
       { name: 'Arduino Uno', description: 'Main microcontroller board', quantity: 1, estimated_cost: '₹400' },
       { name: 'Motor Driver L298N', description: 'Controls DC motors', quantity: 1, estimated_cost: '₹150' },
       { name: 'DC Motors', description: 'For robot movement', quantity: 2, estimated_cost: '₹200' },
-      { name: 'Ultrasonic Sensor', description: 'For obstacle detection', quantity: 1, estimated_cost: '₹100' },
+      { name: 'IR Sensors', description: 'For line detection', quantity: 2, estimated_cost: '₹120' },
       { name: 'Chassis & Wheels', description: 'Robot body and wheels', quantity: 1, estimated_cost: '₹250' },
-      { name: 'Battery Pack', description: '9V or 12V power supply', quantity: 1, estimated_cost: '₹150' }
+      { name: 'Battery Pack', description: '9V or 12V power supply', quantity: 1, estimated_cost: '₹150' },
+      { name: 'Jumper Wires', description: 'For connections', quantity: 20, estimated_cost: '₹50' }
     ];
     steps = [
-      { step: 1, title: 'Research and Design', description: 'Study similar robots and sketch your design with measurements.', tag: 'home', status: 'not_started' },
-      { step: 2, title: 'Gather Components', description: 'Purchase all components from electronics store or online.', tag: 'home', status: 'not_started' },
-      { step: 3, title: 'Assemble Chassis', description: 'Mount motors and wheels to the robot chassis.', tag: 'center', status: 'not_started' },
-      { step: 4, title: 'Wire Motor Driver', description: 'Connect motor driver to Arduino and motors following circuit diagram.', tag: 'center', status: 'not_started' },
-      { step: 5, title: 'Install Sensors', description: 'Mount ultrasonic sensor at front and connect to Arduino.', tag: 'center', status: 'not_started' },
-      { step: 6, title: 'Program Arduino', description: 'Write code for obstacle avoidance and motor control.', tag: 'home', status: 'not_started' },
-      { step: 7, title: 'Test and Debug', description: 'Test each function separately, then together. Fix any issues.', tag: 'center', status: 'not_started' },
-      { step: 8, title: 'Final Assembly', description: 'Secure all components and add battery pack.', tag: 'center', status: 'not_started' }
+      { step: 1, title: 'Research and Design', description: 'Study line follower robots online, understand how IR sensors work, and sketch your robot design.', tag: 'home', status: 'not_started' },
+      { step: 2, title: 'Gather Components', description: 'Purchase all required components from local electronics store or online.', tag: 'home', status: 'not_started' },
+      { step: 3, title: 'Assemble Chassis', description: 'Mount motors and wheels to the chassis. Ensure wheels can rotate freely.', tag: 'center', status: 'not_started' },
+      { step: 4, title: 'Wire Motor Driver', description: 'Connect L298N motor driver to Arduino. Connect motors to motor driver outputs.', tag: 'center', status: 'not_started' },
+      { step: 5, title: 'Install IR Sensors', description: 'Mount IR sensors at front of robot pointing downward to detect the line.', tag: 'center', status: 'not_started' },
+      { step: 6, title: 'Write Arduino Code', description: 'Program logic for line following: read sensors, control motors based on line position.', tag: 'home', status: 'not_started' },
+      { step: 7, title: 'Test on Track', description: 'Create a black line track on white surface. Test robot and adjust sensor sensitivity.', tag: 'center', status: 'not_started' },
+      { step: 8, title: 'Fine-tune & Debug', description: 'Adjust PID values, motor speeds, and sensor thresholds for smooth operation.', tag: 'center', status: 'not_started' }
     ];
   } else if (projectType.includes('iot') || projectType.includes('smart')) {
     components = [
