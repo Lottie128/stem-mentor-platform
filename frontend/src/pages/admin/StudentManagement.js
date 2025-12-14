@@ -7,7 +7,9 @@ const StudentManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [showExpiryModal, setShowExpiryModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [newExpiryDate, setNewExpiryDate] = useState('');
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [generatedEmail, setGeneratedEmail] = useState('');
   const [loading, setLoading] = useState(true);
@@ -80,6 +82,25 @@ const StudentManagement = () => {
     }
   };
 
+  const handleUpdateExpiry = async (student) => {
+    setSelectedStudent(student);
+    setNewExpiryDate(student.expires_at ? student.expires_at.split('T')[0] : '');
+    setShowExpiryModal(true);
+  };
+
+  const confirmUpdateExpiry = async () => {
+    try {
+      await axios.patch(`/api/admin/students/${selectedStudent.id}/expiry`, {
+        expires_at: newExpiryDate || null
+      });
+      alert('✅ Expiry date updated successfully!');
+      setShowExpiryModal(false);
+      fetchStudents();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to update expiry date');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading students...</div>;
   }
@@ -134,7 +155,14 @@ const StudentManagement = () => {
                       className="reset-password-btn"
                       title="Reset student password"
                     >
-                      🔐 Reset Password
+                      🔐 Reset Pwd
+                    </button>
+                    <button 
+                      onClick={() => handleUpdateExpiry(student)}
+                      className="update-expiry-btn"
+                      title="Update expiry date"
+                    >
+                      📅 Expiry
                     </button>
                   </div>
                 </td>
@@ -243,6 +271,38 @@ const StudentManagement = () => {
               </button>
               <button onClick={confirmResetPassword} className="submit-btn danger">
                 ✅ Yes, Reset Password
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Expiry Modal */}
+      {showExpiryModal && (
+        <div className="modal-overlay" onClick={() => setShowExpiryModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>📅 Update Expiry Date</h2>
+            </div>
+            <div className="modal-body">
+              <p><strong>Student:</strong> {selectedStudent?.full_name}</p>
+              <p><strong>Email:</strong> {selectedStudent?.email}</p>
+              <div className="form-group" style={{marginTop: '1rem'}}>
+                <label>New Expiry Date</label>
+                <input
+                  type="date"
+                  value={newExpiryDate}
+                  onChange={(e) => setNewExpiryDate(e.target.value)}
+                />
+                <small>💡 Leave empty to remove expiry date (account never expires)</small>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowExpiryModal(false)} className="cancel-btn">
+                Cancel
+              </button>
+              <button onClick={confirmUpdateExpiry} className="submit-btn">
+                ✅ Update Expiry
               </button>
             </div>
           </div>
